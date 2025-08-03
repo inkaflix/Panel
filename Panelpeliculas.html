@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,6 +5,7 @@
   <title>Panel Admin Blogger con TMDb - Películas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js"></script>
   <style>
     body { font-family: sans-serif; background: #121212; color: #eee; padding: 20px; max-width: 900px; margin: auto; }
     h2 { text-align: center; }
@@ -134,20 +134,21 @@
   <div id="blurOverlay"></div>
 
 <script>
-  const CLIENT_ID = '155693540835-c5528m80r913cahna97nmg7t834pgaub.apps.googleusercontent.com';
-  const API_KEY = 'AIzaSyBvtH_J_Xs6TnD4VpQxdlgcOjXrYZtVyLk';
-  const BLOG_ID = '3812927193244872888';
+  // —————— CONFIGURACIÓN ——————
+  const CLIENT_ID = 'TU_CLIENT_ID_GOOGLE.apps.googleusercontent.com'; // Pon aquí tu Client ID
+  const API_KEY = 'TU_API_KEY_GOOGLE'; // Pon aquí tu API Key
+  const BLOG_ID = 'TU_BLOG_ID'; // Pon aquí tu Blog ID (número)
   const SCOPES = 'https://www.googleapis.com/auth/blogger';
 
   const TMDB_API_KEY = 'dc340e81a2bdef1a7bcb0b31358487fd';
   const imageBase = "https://image.tmdb.org/t/p/w500";
   const backdropBase = "https://image.tmdb.org/t/p/w1280";
 
-  // Google API variables
+  // —————— VARIABLES GLOBALES ——————
   let tokenClient;
   let gapiInited = false;
 
-  // UI elements
+  // —————— ELEMENTOS DEL DOM ——————
   const authBtn = document.getElementById('authBtn');
   const formSection = document.getElementById('formSection');
   const tmdbSearch = document.getElementById('tmdbSearch');
@@ -169,16 +170,16 @@
   const closeDialog = document.getElementById('closeDialog');
   const blurOverlay = document.getElementById('blurOverlay');
 
-  // Variables for pagination and state
+  // —————— ESTADOS ——————
   let currentPage = 1;
   let totalPages = 1;
-  let currentMode = "discover"; // discover or search
+  let currentMode = "discover"; // "discover" o "search"
   let currentQuery = "";
   let currentGenre = "";
   let currentYear = "";
   let isLoading = false;
 
-  // Google API functions
+  // —————— FUNCIONES DE AUTENTICACIÓN ——————
   function gapiLoaded() {
     gapi.load('client', initializeGapiClient);
   }
@@ -193,6 +194,9 @@
       client_id: CLIENT_ID,
       scope: SCOPES,
       callback: (tokenResponse) => {
+        if (tokenResponse.error) {
+          throw (tokenResponse);
+        }
         gapi.client.setToken(tokenResponse);
         formSection.classList.remove('hidden');
         authBtn.style.display = 'none';
@@ -201,10 +205,10 @@
   }
 
   function handleAuth() {
-    tokenClient.requestAccessToken();
+    tokenClient.requestAccessToken({prompt: ''});
   }
 
-  // Publish post on Blogger
+  // —————— PUBLICAR POST ——————
   async function publishPost() {
     const title = postTitle.value.trim();
     const content = postContent.value.trim();
@@ -236,14 +240,13 @@
     }
   }
 
-  // Show spinner and hide spinner
+  // —————— UI Helpers ——————
   function showSpinner() { spinner.style.display = "block"; }
   function hideSpinner() { spinner.style.display = "none"; }
 
-  // Format date like "Jan 25, 2025"
   function formatDate(dateStr) {
     if (!dateStr) return "";
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
     const date = new Date(dateStr);
     const month = months[date.getUTCMonth()];
     const day = date.getUTCDate();
@@ -251,7 +254,7 @@
     return `${month} ${day}, ${year}`;
   }
 
-  // Load genres TMDb for movies
+  // —————— CARGAR GÉNEROS Y AÑOS ——————
   function loadGenres() {
     fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${TMDB_API_KEY}&language=es-ES`)
       .then(res => res.json())
@@ -264,7 +267,7 @@
         });
       })
       .catch(() => {
-        // Default genres if error
+        // Géneros por defecto si falla la API
         const defaultGenres = [
           {id: 28, name: "Acción"},
           {id: 35, name: "Comedia"},
@@ -279,9 +282,8 @@
       });
   }
 
-  // Generate years in select
   function loadYears() {
-    for (let y = 2025; y >= 1950; y--) {
+    for (let y = new Date().getFullYear(); y >= 1950; y--) {
       const option = document.createElement("option");
       option.value = y;
       option.textContent = y;
@@ -289,7 +291,7 @@
     }
   }
 
-  // Fetch movies from TMDb API (discover or search)
+  // —————— BÚSQUEDA Y DESCUBRIR ——————
   function fetchMovies(url, append = false) {
     isLoading = true;
     showSpinner();
@@ -308,19 +310,18 @@
       });
   }
 
-  // Display movies grid
-  function displayMovies(movies, append = false) {
+  function displayMovies(moviesList, append = false) {
     if (!append) movieGrid.innerHTML = "";
-    if (!movies || movies.length === 0) {
+    if (!moviesList || moviesList.length === 0) {
       if (!append) movieGrid.innerHTML = "<p style='color:#ccc'>No se encontraron películas.</p>";
       return;
     }
-    movies.forEach(movie => {
+    moviesList.forEach(movie => {
       const card = document.createElement("div");
       card.className = "movie-card";
       const formattedDate = formatDate(movie.release_date);
       card.innerHTML = `
-        <img src="${movie.poster_path ? imageBase + movie.poster_path : 'https://via.placeholder.com/500x750?text=Sin+imagen'}" alt="${movie.title}" />
+        <img src="${movie.poster_path ? imageBase + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image'}" alt="${movie.title}" />
         <div class="title">${movie.title}</div>
         <div class="release-date">${formattedDate}</div>
       `;
@@ -329,7 +330,6 @@
     });
   }
 
-  // Show movie details with template and fill form
   function showMovieDetails(movieId) {
     const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&language=es-ES&append_to_response=videos`;
     fetch(url)
@@ -339,7 +339,7 @@
         const genres = movie.genres?.map(g => g.name) || [];
         const trailer = movie.videos?.results.find(v => v.site === "YouTube" && v.type === "Trailer");
         const trailerId = trailer ? trailer.key : "";
-        const runtime = movie.runtime || "N/A";
+        const runtime = movie.runtime || 'N/A';
 
         const htmlOutput = `
 <!-- Película: ${movie.title} -->
@@ -373,12 +373,11 @@
 </ul>
 <!-- Generado por Plantillas CJ y Plantillas JMA -->
 `;
-        // Rellenar formulario
+
         postTitle.value = movie.title;
         postContent.value = htmlOutput;
         postLabels.value = genres.join(", ");
 
-        // Mostrar diálogo modal con el contenido para confirmar (opcional)
         dialogContent.textContent = htmlOutput;
         movieDialog.style.display = "block";
         blurOverlay.style.display = "block";
@@ -387,3 +386,119 @@
         alert("Error cargando detalles de la película.");
       });
   }
+
+  // —————— BÚSQUEDA CON AUTOCOMPLETADO ——————
+  let searchTimeout;
+  tmdbSearch.addEventListener("input", () => {
+    const query = tmdbSearch.value.trim();
+    if (query.length < 3) {
+      searchResults.classList.add("hidden");
+      return;
+    }
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(query)}&page=1`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.results.length) {
+            searchResults.innerHTML = "<li>No se encontraron resultados</li>";
+            searchResults.classList.remove("hidden");
+            return;
+          }
+          searchResults.innerHTML = "";
+          data.results.slice(0, 7).forEach(movie => {
+            const li = document.createElement("li");
+            li.textContent = movie.title + (movie.release_date ? ` (${movie.release_date.slice(0,4)})` : "");
+            li.addEventListener("click", () => {
+              showMovieDetails(movie.id);
+              searchResults.classList.add("hidden");
+              tmdbSearch.value = "";
+            });
+            searchResults.appendChild(li);
+          });
+          searchResults.classList.remove("hidden");
+        });
+    }, 500);
+  });
+
+  document.addEventListener("click", e => {
+    if (!searchResults.contains(e.target) && e.target !== tmdbSearch) {
+      searchResults.classList.add("hidden");
+    }
+  });
+
+  // —————— SCROLL INFINITO ——————
+window.addEventListener("scroll", () => {
+  if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200 && !isLoading && currentPage < totalPages) {
+    currentPage++;
+    let url;
+    if (currentMode === "discover") {
+      url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=es-ES&sort_by=popularity.desc&page=${currentPage}`;
+      if (currentGenre) url += `&with_genres=${currentGenre}`;
+      if (currentYear) url += `&primary_release_year=${currentYear}`;
+    } else if (currentMode === "search") {
+      url = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
+    }
+    if (url) fetchMovies(url, true);
+  }
+});
+
+// —————— BOTONES Y EVENTOS ——————
+authBtn.addEventListener("click", () => {
+  if (tokenClient) {
+    handleAuth();
+  } else {
+    alert("Aún no se ha inicializado la autenticación Google.");
+  }
+});
+
+discoverBtn.addEventListener("click", () => {
+  currentMode = "discover";
+  currentPage = 1;
+  currentGenre = genreSelect.value;
+  currentYear = yearSelect.value;
+  const url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=es-ES&sort_by=popularity.desc&page=1`
+              + (currentGenre ? `&with_genres=${currentGenre}` : "")
+              + (currentYear ? `&primary_release_year=${currentYear}` : "");
+  fetchMovies(url);
+});
+
+searchBtn.addEventListener("click", () => {
+  const query = tmdbSearch.value.trim();
+  if (!query) {
+    alert("Escribe algo para buscar.");
+    return;
+  }
+  currentMode = "search";
+  currentPage = 1;
+  currentQuery = query;
+  fetchMovies(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(query)}&page=1`);
+});
+
+publishButton.addEventListener("click", () => {
+  publishPost();
+});
+
+closeDialog.addEventListener("click", () => {
+  movieDialog.style.display = "none";
+  blurOverlay.style.display = "none";
+});
+
+// —————— INICIALIZACIÓN ——————
+window.onload = () => {
+  loadGenres();
+  loadYears();
+};
+</script>
+
+<script>
+  // Carga las librerías Google API y OAuth2
+  function start() {
+    gapiLoaded();
+    gisLoaded();
+  }
+  window.onload = start;
+</script>
+
+</body>
+</html>

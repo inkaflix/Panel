@@ -337,12 +337,26 @@
 
 <!-- Géneros: ${genres.join(",")},${year},Movie,2025 -->
 
-<!--  -->
 <div data-post-type="movie" hidden>
   <img src="${imageBase + movie.poster_path}" alt="${movie.title}"/>
   <p id="tmdb-synopsis">${movie.overview}</p>
 </div>
 <a name='more'></a>
+
+<!-- Reproductor personalizado -->
+<div class="plyer-node" data-selected-lang="lat"></div>
+<script>
+  const _SV_LINKS = [
+    {
+      lang: "lat",
+      name: "Servers",
+      quality: "HD",
+      url: "https://streaming.cinedom.pro/api/movie/${movie.id}",
+      tagVideo: false
+    }
+  ];
+</script>
+
 <!-- Este generador fue creado por Plantillas CJ y Plantillas JMA -->
 <div
   data-youtube-id="${trailerId}"
@@ -351,7 +365,7 @@
   data-year="${year}"
   data-duration="${duration} min">
 </div>
-<!--  -->
+
 <div class="headline is-small mb-4">
   <h2 class="headline__title">Información</h2>
 </div>

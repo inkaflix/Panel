@@ -1,91 +1,500 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Panel Admin Blogger</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-    input, textarea, button, select { width: 100%; margin-top: 10px; padding: 10px; font-size: 1rem; }
-    .hidden { display: none; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Panel Admin Blogger TMDb - Generador automático</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #121212;
+    color: #eee;
+    margin: 0; padding: 0 1rem;
+  }
+  h1 {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  input[type="text"], select, button {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    margin: 0.5rem 0 1rem 0;
+    border-radius: 4px;
+    border: none;
+    box-sizing: border-box;
+  }
+  button {
+    background: #007bff;
+    color: white;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) {
+    background: #0056b3;
+  }
+  button:disabled {
+    background: #444;
+    cursor: not-allowed;
+  }
+  .search-results {
+    max-height: 300px;
+    overflow-y: auto;
+    background: #222;
+    border-radius: 5px;
+  }
+  .search-result-item {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.3rem;
+    border-bottom: 1px solid #333;
+  }
+  .search-result-item:hover {
+    background: #333;
+  }
+  .search-result-item img {
+    width: 50px;
+    height: 70px;
+    object-fit: cover;
+    margin-right: 1rem;
+    border-radius: 3px;
+  }
+  .info-selected {
+    margin: 1rem 0;
+    background: #222;
+    padding: 1rem;
+    border-radius: 5px;
+  }
+  label {
+    font-weight: bold;
+  }
+  .episodes-container {
+    background: #1c1c1c;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+  }
+  .episode-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.3rem;
+  }
+  .episode-label {
+    flex: 0 0 90px;
+  }
+  .episode-input {
+    flex-grow: 1;
+  }
+  textarea {
+    width: 100%;
+    height: 280px;
+    background: #222;
+    color: #eee;
+    border-radius: 5px;
+    border: none;
+    font-family: monospace;
+    font-size: 0.9rem;
+    padding: 1rem;
+    resize: vertical;
+  }
+  .copy-message {
+    color: #0f0;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    display: none;
+  }
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
-  <h2>📋 Panel Admin Blogger</h2>
 
-  <button onclick="handleAuth()">🔐 Iniciar sesión con Google</button>
+<h1>Panel Admin Blogger - Generador TMDb Automático</h1>
 
-  <div id="formSection" class="hidden">
-    <input type="text" id="postTitle" placeholder="Título de la entrada">
-    <textarea id="postContent" rows="8" placeholder="Contenido HTML"></textarea>
-    <input type="text" id="postLabels" placeholder="Etiquetas separadas por comas">
-    <button onclick="publishPost()">🚀 Publicar Entrada</button>
+<label for="search-input">Buscar Serie (TMDb):</label>
+<input id="search-input" type="text" placeholder="Escribe el nombre de la serie..." autocomplete="off" />
+
+<div class="search-results" id="search-results"></div>
+
+<div class="info-selected hidden" id="info-selected">
+  <h2 id="serie-title"></h2>
+  <p id="serie-genres"></p>
+  <img id="serie-poster" src="" alt="" style="max-width: 150px; display:block; margin:0.5rem 0;" />
+  <p id="serie-year"></p>
+
+  <div>
+    <label for="trailer-url">Trailer (URL embed YouTube):</label>
+    <input id="trailer-url" type="text" placeholder="https://www.youtube.com/embed/VIDEOID" />
   </div>
 
-  <p id="status"></p>
+  <div>
+    <label for="episode-url-template">Plantilla URL Episodios (usa {season} y {episode}):</label>
+    <input id="episode-url-template" type="text" placeholder="https://streaming.cinedom.pro/api/tv/244808/{season}/{episode}" />
+  </div>
 
-  <script>
-    const CLIENT_ID = '155693540835-c5528m80r913cahna97nmg7t834pgaub.apps.googleusercontent.com'; // ✅ corregido
-    const API_KEY = 'AIzaSyBvtH_J_Xs6TnD4VpQxdlgcOjXrYZtVyLk';
-    const BLOG_ID = '3812927193244872888';
-    const SCOPES = 'https://www.googleapis.com/auth/blogger';
+  <div class="season-select-container">
+    <label for="select-season">Seleccionar Temporada:</label>
+    <select id="select-season"></select>
+  </div>
 
-    let tokenClient;
-    let gapiInited = false;
+  <div id="episodes-container" class="episodes-container"></div>
 
-    function gapiLoaded() {
-      gapi.load('client', initializeGapiClient);
+  <button id="add-season-btn">+ Añadir Temporada Manual</button>
+  <button id="generate-btn">Generar Código</button>
+
+  <p class="copy-message" id="copy-message">Código copiado al portapapeles!</p>
+
+  <label for="generated-code">Código generado:</label>
+  <textarea id="generated-code" readonly></textarea>
+
+  <hr>
+
+  <button id="login-google-btn">Login Google para Publicar</button>
+  <button id="publish-btn" disabled>Publicar en Blogger</button>
+  <p id="publish-status"></p>
+</div>
+
+<script>
+  // --- CONFIGURA AQUÍ TUS KEYS ---
+  const API_KEY = 'TU_API_KEY_TMDB_AQUI';
+  const CLIENT_ID_GOOGLE = 'TU_CLIENT_ID_GOOGLE.apps.googleusercontent.com';
+  const API_KEY_GOOGLE = 'TU_API_KEY_GOOGLE_CLOUD';
+  const BLOG_ID = 'TU_ID_BLOG_BLOGGER';
+
+  // Elementos DOM
+  const searchInput = document.getElementById('search-input');
+  const searchResults = document.getElementById('search-results');
+  const infoSelected = document.getElementById('info-selected');
+  const serieTitle = document.getElementById('serie-title');
+  const serieGenres = document.getElementById('serie-genres');
+  const seriePoster = document.getElementById('serie-poster');
+  const serieYear = document.getElementById('serie-year');
+  const trailerUrlInput = document.getElementById('trailer-url');
+  const episodeUrlTemplateInput = document.getElementById('episode-url-template');
+  const selectSeason = document.getElementById('select-season');
+  const episodesContainer = document.getElementById('episodes-container');
+  const addSeasonBtn = document.getElementById('add-season-btn');
+  const generateBtn = document.getElementById('generate-btn');
+  const generatedCode = document.getElementById('generated-code');
+  const copyMessage = document.getElementById('copy-message');
+  const loginGoogleBtn = document.getElementById('login-google-btn');
+  const publishBtn = document.getElementById('publish-btn');
+  const publishStatus = document.getElementById('publish-status');
+
+  let currentSerie = null;
+  let seasonsData = [];
+  let authInstance = null;
+
+  // Buscar series
+  async function searchSeries(query) {
+    if (!query.trim()) {
+      searchResults.innerHTML = '';
+      return [];
     }
+    const url = `https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&language=es-ES&query=${encodeURIComponent(query)}&page=1`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.results || [];
+  }
 
-    async function initializeGapiClient() {
-      await gapi.client.init({ apiKey: API_KEY });
-      gapiInited = true;
+  function renderSearchResults(results) {
+    searchResults.innerHTML = '';
+    if (!results.length) {
+      searchResults.innerHTML = '<p style="padding:0.5rem;">No se encontraron resultados.</p>';
+      return;
     }
+    for (const serie of results) {
+      const div = document.createElement('div');
+      div.className = 'search-result-item';
+      div.innerHTML = `
+        <img src="https://image.tmdb.org/t/p/w92${serie.poster_path || ''}" alt="${serie.name}" />
+        <span>${serie.name} (${serie.first_air_date ? serie.first_air_date.slice(0,4) : 'N/A'})</span>
+      `;
+      div.onclick = () => selectSerie(serie.id);
+      searchResults.appendChild(div);
+    }
+  }
 
-    function gisLoaded() {
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID, // ✅ usar client_id completo
-        scope: SCOPES,
-        callback: (tokenResponse) => {
-          gapi.client.setToken(tokenResponse);
-          document.getElementById('formSection').classList.remove('hidden');
-        },
+  async function selectSerie(id) {
+    searchResults.innerHTML = '';
+    searchInput.value = '';
+    const url = `https://api.themoviedb.org/3/tv/${id}?api_key=${API_KEY}&language=es-ES`;
+    const res = await fetch(url);
+    const data = await res.json();
+    currentSerie = data;
+
+    serieTitle.textContent = `${data.name} - ${data.first_air_date ? data.first_air_date.slice(0,4) : ''}`;
+    serieGenres.textContent = 'Géneros: ' + (data.genres.map(g => g.name).join(', ') || 'N/A');
+    seriePoster.src = `https://image.tmdb.org/t/p/w500${data.poster_path}`;
+    seriePoster.alt = data.name;
+    serieYear.textContent = `Temporadas: ${data.number_of_seasons}`;
+
+    // Limpiar select temporadas y seasonsData
+    selectSeason.innerHTML = '';
+    seasonsData = [];
+
+    for(let i=1; i<=data.number_of_seasons; i++) {
+      const option = document.createElement('option');
+      option.value = i;
+      option.textContent = `Temporada ${i}`;
+      selectSeason.appendChild(option);
+
+      seasonsData.push({
+        season_number: i,
+        episodes: [],
+        customUrls: {},
       });
     }
 
-    function handleAuth() {
-      tokenClient.requestAccessToken();
+    await loadEpisodesForSeason(1);
+
+    infoSelected.classList.remove('hidden');
+    generateBtn.disabled = false;
+    addSeasonBtn.disabled = false;
+    publishBtn.disabled = true;
+    copyMessage.style.display = 'none';
+    generatedCode.value = '';
+    trailerUrlInput.value = '';
+    episodeUrlTemplateInput.value = '';
+    publishStatus.textContent = '';
+  }
+
+  async function loadEpisodesForSeason(seasonNumber) {
+    episodesContainer.innerHTML = '<p>Cargando episodios...</p>';
+    const url = `https://api.themoviedb.org/3/tv/${currentSerie.id}/season/${seasonNumber}?api_key=${API_KEY}&language=es-ES`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    const seasonIndex = seasonsData.findIndex(s => s.season_number === seasonNumber);
+    if (seasonIndex < 0) return;
+
+    seasonsData[seasonIndex].episodes = data.episodes;
+    renderEpisodeInputs(seasonNumber);
+  }
+
+  function renderEpisodeInputs(seasonNumber) {
+    const seasonIndex = seasonsData.findIndex(s => s.season_number === seasonNumber);
+    if (seasonIndex < 0) return;
+
+    const season = seasonsData[seasonIndex];
+    episodesContainer.innerHTML = '';
+
+    if (!season.episodes.length) {
+      episodesContainer.innerHTML = '<p>No hay episodios en esta temporada.</p>';
+      return;
     }
 
-    async function publishPost() {
-      const title = document.getElementById('postTitle').value;
-      const content = document.getElementById('postContent').value;
-      const labels = document.getElementById('postLabels').value.split(',');
+    const urlTemplate = episodeUrlTemplateInput.value.trim();
 
-      const post = {
-        kind: "blogger#post",
-        blog: { id: BLOG_ID },
-        title: title,
-        content: content,
-        labels: labels.map(e => e.trim())
+    for (const ep of season.episodes) {
+      const epNum = ep.episode_number;
+      const row = document.createElement('div');
+      row.className = 'episode-row';
+
+      const label = document.createElement('label');
+      label.className = 'episode-label';
+      label.textContent = `Episodio ${epNum}:`;
+      label.htmlFor = `episode-url-${seasonNumber}-${epNum}`;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'episode-input';
+      input.id = `episode-url-${seasonNumber}-${epNum}`;
+      input.placeholder = 'URL del episodio...';
+
+      if (season.customUrls[epNum]) {
+        input.value = season.customUrls[epNum];
+      } else if (urlTemplate) {
+        let url = urlTemplate.replace(/\{season\}/gi, seasonNumber).replace(/\{episode\}/gi, epNum);
+        input.value = url;
+        season.customUrls[epNum] = url;
+      } else {
+        input.value = '';
+      }
+
+      input.oninput = (e) => {
+        seasonsData[seasonIndex].customUrls[epNum] = e.target.value.trim();
       };
 
-      try {
-        const response = await gapi.client.request({
-          path: `https://www.googleapis.com/blogger/v3/blogs/${BLOG_ID}/posts/`,
-          method: 'POST',
-          body: post
-        });
-
-        document.getElementById('status').innerText = `✅ Publicado: ${response.result.url}`;
-      } catch (err) {
-        document.getElementById('status').innerText = `❌ Error: ${err.message}`;
-      }
+      row.appendChild(label);
+      row.appendChild(input);
+      episodesContainer.appendChild(row);
     }
-  </script>
+  }
 
-  <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-  <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+  selectSeason.onchange = async function() {
+    const seasonNumber = parseInt(this.value);
+    await loadEpisodesForSeason(seasonNumber);
+  };
+
+  episodeUrlTemplateInput.addEventListener('input', () => {
+    const seasonNumber = parseInt(selectSeason.value);
+    if(seasonNumber) {
+      renderEpisodeInputs(seasonNumber);
+    }
+  });
+
+  addSeasonBtn.onclick = () => {
+    let newSeasonNumber = seasonsData.length + 1;
+
+    seasonsData.push({
+      season_number: newSeasonNumber,
+      episodes: [{episode_number: 1, name: 'Episodio 1'}],
+      customUrls: {},
+    });
+
+    const option = document.createElement('option');
+    option.value = newSeasonNumber;
+    option.textContent = `Temporada ${newSeasonNumber}`;
+    selectSeason.appendChild(option);
+    selectSeason.value = newSeasonNumber;
+
+    renderEpisodeInputs(newSeasonNumber);
+  };
+
+  generateBtn.onclick = () => {
+    if (!currentSerie) {
+      alert('Selecciona una serie primero.');
+      return;
+    }
+
+    let lines = [];
+
+    lines.push(`<!-- ${currentSerie.name} - ${currentSerie.first_air_date ? currentSerie.first_air_date.slice(0,4) : 'N/A'} -->`);
+
+    const genresText = currentSerie.genres.length
+      ? currentSerie.genres.map(g => g.name).join(', ') + ', '
+      : '';
+    lines.push(`<!-- GÉNEROS/ETIQUETAS: ${genresText}-->`);
+
+    lines.push(`<!-- https://image.tmdb.org/t/p/w1280${currentSerie.backdrop_path} image/jpeg -->`);
+    lines.push('');
+    lines.push('[stt/Serie]');
+    lines.push('[hd/HD]');
+    lines.push(`[sc/${currentSerie.vote_average.toFixed(1)}]`);
+    lines.push('');
+    lines.push(`<span class='temp+'><!--more-->${currentSerie.number_of_seasons} Temporadas</span>`);
+    lines.push(`<img alt="${currentSerie.name}" src="https://image.tmdb.org/t/p/w500${currentSerie.poster_path}" style="display: none;" />`);
+    lines.push('<p>');
+    lines.push('');
+    lines.push('[ss]');
+
+    const trailer = trailerUrlInput.value.trim();
+    if(trailer) {
+      lines.push(`[Trailer;${trailer}]`);
+    }
+    lines.push('[/ss]');
+    lines.push('');
+    lines.push('[nd]');
+    lines.push('');
+    lines.push('[/nd]');
+    lines.push('');
+    lines.push('<!-- Lista de Episodios -->');
+    lines.push('<div class="season-list add-on">');
+    lines.push('  <div class="select-season">');
+    lines.push('    <h2>Episodios</h2>');
+    lines.push('    <select id="select-season" onchange="changeSeason(this.value)">');
+
+    for(const season of seasonsData) {
+      lines.push(`      <option value="${season.season_number}">Temporada ${season.season_number}</option>`);
+    }
+    lines.push('    </select>');
+    lines.push('  </div>');
+    lines.push('  <div id="temps">');
+
+    for(const season of seasonsData) {
+      lines.push(`    <ul class="caps-grid animation" id="season-${season.season_number}">`);
+      lines.push('      <id>');
+      lines.push(`      [br/Episodios temporada ${season.season_number}]`);
+
+      if(season.episodes.length === 0) {
+        lines.push('      <!-- Sin episodios cargados -->');
+      } else {
+        for(const ep of season.episodes) {
+          const epNum = ep.episode_number;
+          const url = season.customUrls[epNum] || '';
+          lines.push(`      [epi ${epNum}|${url}]`);
+        }
+      }
+
+      lines.push('      </id>');
+      lines.push('    </ul>');
+    }
+
+    lines.push('  </div>');
+    lines.push('</div>');
+
+    generatedCode.value = lines.join('\n');
+    copyMessage.style.display = 'block';
+    navigator.clipboard.writeText(generatedCode.value);
+    publishBtn.disabled = false;
+    publishStatus.textContent = '';
+  };
+
+  // --- Google API para publicar post ---
+
+  loginGoogleBtn.onclick = () => {
+    gapi.load('client:auth2', initClient);
+  };
+
+  function initClient() {
+    gapi.client.init({
+      apiKey: API_KEY_GOOGLE,
+      clientId: CLIENT_ID_GOOGLE,
+      discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/blogger/v3/rest"],
+      scope: 'https://www.googleapis.com/auth/blogger'
+    }).then(() => {
+      authInstance = gapi.auth2.getAuthInstance();
+      if (!authInstance.isSignedIn.get()) {
+        authInstance.signIn().then(() => {
+          publishBtn.disabled = false;
+          publishStatus.textContent = 'Autenticado con éxito. Ya puedes publicar.';
+        }).catch(err => {
+          publishStatus.textContent = 'Error en login: ' + err.error;
+        });
+      } else {
+        publishBtn.disabled = false;
+        publishStatus.textContent = 'Ya estás autenticado.';
+      }
+    });
+  }
+
+  publishBtn.onclick = () => {
+    const content = generatedCode.value;
+    if(!content) {
+      alert('Genera primero el código antes de publicar.');
+      return;
+    }
+    const title = serieTitle.textContent || 'Nuevo post TMDb';
+
+    const post = {
+      title: title,
+      content: content,
+    };
+
+    gapi.client.blogger.posts.insert({
+      blogId: BLOG_ID,
+      resource: post,
+    }).then(response => {
+      publishStatus.textContent = 'Post publicado con éxito! URL: ' + response.result.url;
+    }).catch(error => {
+      publishStatus.textContent = 'Error al publicar: ' + (error.result?.error?.message || error.message);
+    });
+  };
+
+  // Búsqueda con debounce
+  let searchTimeout = null;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    if (searchInput.value.trim().length < 3) {
+        searchResults.innerHTML = '';
+        return;
+      }
+      const results = await searchSeries(searchInput.value.trim());
+      renderSearchResults(results);
+    }, 400);
+  });
+</script>
+
 </body>
 </html>

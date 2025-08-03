@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Admin Blogger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+    input, textarea, button, select { width: 100%; margin-top: 10px; padding: 10px; font-size: 1rem; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h2>📋 Panel Admin Blogger</h2>
+
+  <button onclick="handleAuth()">🔐 Iniciar sesión con Google</button>
+
+  <div id="formSection" class="hidden">
+    <input type="text" id="postTitle" placeholder="Título de la entrada">
+    <textarea id="postContent" rows="8" placeholder="Contenido HTML"></textarea>
+    <input type="text" id="postLabels" placeholder="Etiquetas separadas por comas">
+    <button onclick="publishPost()">🚀 Publicar Entrada</button>
+  </div>
+
+  <p id="status"></p>
+
+  <script>
+    const CLIENT_ID = '155693540835-c5528m80r913cahna97nmg7t834pgaub.apps.googleusercontent.comm';
+    const API_KEY = 'AIzaSyBvtH_J_Xs6TnD4VpQxdlgcOjXrYZtVyLk';
+    const BLOG_ID = '3812927193244872888';
+    const SCOPES = 'https://www.googleapis.com/auth/blogger';
+
+    let tokenClient;
+    let gapiInited = false;
+    let gisInited = false;
+
+    function gapiLoaded() {
+      gapi.load('client', initializeGapiClient);
+    }
+
+    async function initializeGapiClient() {
+      await gapi.client.init({ apiKey: API_KEY });
+      gapiInited = true;
+    }
+
+    function gisLoaded() {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: 155693540835,
+        scope: SCOPES,
+        callback: (tokenResponse) => {
+          gapi.client.setToken(tokenResponse);
+          document.getElementById('formSection').classList.remove('hidden');
+        },
+      });
+      gisInited = true;
+    }
+
+    function handleAuth() {
+      tokenClient.requestAccessToken();
+    }
+
+    async function publishPost() {
+      const title = document.getElementById('postTitle').value;
+      const content = document.getElementById('postContent').value;
+      const labels = document.getElementById('postLabels').value.split(',');
+
+      const post = {
+        kind: "blogger#post",
+        blog: { id: BLOG_ID },
+        title: title,
+        content: content,
+        labels: labels.map(e => e.trim())
+      };
+
+      try {
+        const response = await gapi.client.request({
+          path: `https://www.googleapis.com/blogger/v3/blogs/${BLOG_ID}/posts/`,
+          method: 'POST',
+          body: post
+        });
+
+        document.getElementById('status').innerText = `✅ Publicado: ${response.result.url}`;
+      } catch (err) {
+        document.getElementById('status').innerText = `❌ Error: ${err.message}`;
+      }
+    }
+  </script>
+
+  <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+  <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+</body>
+</html>

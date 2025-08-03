@@ -2,458 +2,358 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Panel Admin Blogger con TMDb - Diseño Mejorado</title>
+  <title>Panel Admin Blogger con TMDb</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    /* Reset básico */
-    *, *::before, *::after {
+    body { font-family: sans-serif; background: #121212; color: #eee; padding: 20px; max-width: 900px; margin: auto; }
+    h2 { text-align: center; }
+    input, textarea, button, select {
+      width: 100%; margin-top: 10px; padding: 10px; font-size: 1rem; border-radius: 5px; border: none;
       box-sizing: border-box;
     }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      color: #f0f0f0;
-      margin: 0;
-      padding: 20px;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-    }
-
-    .container {
-      background: #1e2a38cc;
-      backdrop-filter: saturate(180%) blur(20px);
-      border-radius: 15px;
-      padding: 25px 30px;
-      max-width: 900px;
-      width: 100%;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    h2 {
-      text-align: center;
-      font-weight: 700;
-      font-size: 2rem;
-      color: #34d399;
-      margin-bottom: 10px;
-      user-select: none;
-      text-shadow: 0 0 8px #10b981aa;
-    }
-
     button {
-      background: #34d399;
+      background-color: #1db954; color: white; font-weight: bold; cursor: pointer; transition: background-color 0.3s ease;
       border: none;
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 1rem;
-      color: #07372b;
-      cursor: pointer;
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
-      user-select: none;
-      box-shadow: 0 6px 12px rgba(52,211,153,0.4);
     }
-    button:hover, button:focus {
-      background: #22c55e;
-      box-shadow: 0 8px 15px rgba(34,197,94,0.6);
-      outline: none;
-    }
-    button:disabled {
-      background: #4ade80aa;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    input[type=text], textarea, select {
-      width: 100%;
-      padding: 14px 18px;
-      border-radius: 12px;
-      border: none;
-      background: #2a3948cc;
-      color: #cbd5e1;
-      font-size: 1rem;
-      font-weight: 500;
-      box-shadow: inset 0 0 8px #00000077;
-      transition: background-color 0.3s ease;
-      resize: vertical;
-      user-select: text;
-    }
-    input[type=text]:focus, textarea:focus, select:focus {
-      background: #2a3948ee;
-      outline: none;
-      box-shadow: 0 0 12px #34d399aa;
-      color: #e6fffa;
-    }
-
-    /* Layout grilla series */
-    #movieGrid {
-      margin-top: 15px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
-      gap: 15px;
-      user-select: none;
-    }
-
-    .movie-card {
-      background: #2a3948cc;
-      border-radius: 14px;
-      overflow: hidden;
-      cursor: pointer;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-      display: flex;
-      flex-direction: column;
-      user-select: none;
-    }
-    .movie-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 8px 20px #22c55eaa;
-    }
-    .movie-card img {
-      width: 100%;
-      height: 210px;
-      object-fit: cover;
-      border-bottom: 3px solid #22c55e;
-      pointer-events: none;
-    }
-    .title {
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 8px 10px 3px 10px;
-      color: #22c55e;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      user-select: text;
-    }
-    .release-date {
-      font-size: 0.75rem;
-      color: #94a3b8;
-      padding: 0 10px 10px 10px;
-      font-style: italic;
-      user-select: text;
-    }
-
-    /* Spinner */
-    #loadingSpinner {
-      color: #22c55e;
-      font-weight: 600;
-      text-align: center;
-      user-select: none;
-    }
-
-    /* Autocomplete lista */
+    button:hover { background-color: #14833b; }
+    select { background-color: #222; color: white; }
+    input, textarea { background-color: #222; color: #eee; }
     #searchResults {
-      position: absolute;
-      top: 44px;
-      left: 0;
-      right: 0;
-      max-height: 200px;
-      overflow-y: auto;
-      background: #1f2937cc;
-      border-radius: 10px;
-      box-shadow: 0 0 12px #22c55eaa;
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      z-index: 1100;
-      user-select: none;
+      border: 1px solid #444; max-height: 200px; overflow-y: auto; margin-top: 0; padding: 0; list-style: none;
+      background: #1e1e1e; border-radius: 5px;
+      position: absolute; width: 100%; z-index: 1000;
     }
     #searchResults li {
-      padding: 12px 18px;
-      cursor: pointer;
-      color: #d1d5db;
-      font-weight: 500;
-      transition: background-color 0.2s ease;
-      user-select: text;
+      padding: 10px; cursor: pointer; border-bottom: 1px solid #333;
     }
     #searchResults li:hover {
-      background: #22c55e88;
-      color: #072f17;
+      background-color: #333;
     }
-
-    /* Modal diálogo */
+    #movieGrid {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
+      gap: 10px;
+    }
+    .movie-card {
+      background: #222; border-radius: 8px; overflow: hidden; cursor: pointer;
+      box-shadow: 0 0 8px rgba(0,0,0,0.7);
+      transition: transform 0.2s ease;
+    }
+    .movie-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #1db954;
+    }
+    .movie-card img {
+      width: 100%; height: auto; display: block;
+    }
+    .title {
+      padding: 5px 8px; font-weight: bold; font-size: 0.9rem; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; color: #1db954;
+    }
+    .release-date {
+      padding: 0 8px 8px 8px; font-size: 0.75rem; color: #aaa;
+    }
+    #loadingSpinner {
+      display: none; text-align: center; margin-top: 20px;
+    }
+    /* Dialogo modal */
     #movieDialog {
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: #0f172a;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px #22c55eaa;
-      padding: 20px 25px;
-      width: 90%;
-      max-width: 700px;
-      max-height: 80vh;
-      overflow-y: auto;
-      color: #d1d5db;
-      z-index: 1500;
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: #222; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.9);
+      padding: 20px; max-width: 600px; max-height: 80vh; overflow-y: auto; z-index: 2000;
+      color: #eee;
       display: none;
-      user-select: text;
     }
     #movieDialog pre {
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-family: 'Fira Mono', monospace;
-      background: #1e293b;
-      padding: 15px;
-      border-radius: 14px;
-      box-shadow: inset 0 0 10px #000000cc;
-      font-size: 0.9rem;
-      user-select: text;
+      background: #111; padding: 10px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap;
     }
     #closeDialog {
-      background: #dc2626;
-      border: none;
-      color: white;
-      font-weight: 700;
-      padding: 8px 15px;
-      border-radius: 14px;
-      cursor: pointer;
-      float: right;
-      transition: background-color 0.3s ease;
-      user-select: none;
+      background: #e74c3c; color: white; padding: 5px 10px; border: none; border-radius: 5px;
+      cursor: pointer; float: right; font-weight: bold; margin-top: -10px; margin-bottom: 10px;
     }
-    #closeDialog:hover, #closeDialog:focus {
-      background: #b91c1c;
-      outline: none;
-    }
-
     #blurOverlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(4px);
-      z-index: 1400;
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(3px);
+      z-index: 1500;
       display: none;
-      user-select: none;
     }
-
-    /* Formularios agrupados */
-    .form-group {
-      position: relative;
-      width: 100%;
-    }
-    /* Para que el buscador tenga margen abajo y autocomplete no choque */
-    .form-group.search {
-      margin-bottom: 0;
-    }
-
-    /* Responsividad */
-    @media (max-width: 600px) {
-      .movie-card img {
-        height: 170px;
-      }
-      button {
-        font-size: 0.9rem;
-      }
-    }
-
+    .hidden { display: none !important; }
+    .form-group { position: relative; margin-bottom: 20px; }
   </style>
 </head>
 <body>
-  <div class="container">
+  <h2>📋 Panel Admin Blogger con TMDb</h2>
 
-    <h2>📋 Panel Admin Blogger con TMDb</h2>
+  <button id="authBtn">🔐 Iniciar sesión con Google</button>
 
-    <button id="authBtn">🔐 Iniciar sesión con Google</button>
+  <div id="formSection" class="hidden">
 
-    <div id="formSection" class="hidden">
-
-      <div class="form-group search" style="margin-bottom: 5px;">
-        <input type="text" id="tmdbSearch" placeholder="Buscar serie en TMDb..." autocomplete="off" />
-        <ul id="searchResults" class="hidden"></ul>
-      </div>
-
-      <div class="form-group">
-        <select id="genreFilter" aria-label="Filtrar por género">
-          <option value="">-- Filtrar por género --</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <select id="yearFilter" aria-label="Filtrar por año">
-          <option value="">-- Filtrar por año --</option>
-        </select>
-      </div>
-
-      <button id="discoverButton" aria-label="Descubrir series populares">Descubrir series populares</button>
-      <button id="searchButton" aria-label="Buscar series filtradas">Buscar series filtradas</button>
-
-      <div id="movieGrid" aria-live="polite" aria-atomic="true" role="list"></div>
-
-      <div id="loadingSpinner" aria-hidden="true">Cargando...</div>
-
-      <hr style="border-color: #334155; margin: 25px 0;">
-
-      <input type="text" id="postTitle" placeholder="Título de la entrada" aria-label="Título de la entrada" />
-      <textarea id="postContent" rows="12" placeholder="Contenido HTML" aria-label="Contenido HTML"></textarea>
-      <input type="text" id="postLabels" placeholder="Etiquetas separadas por comas" aria-label="Etiquetas separadas por comas" />
-
-      <button id="publishButton">🚀 Publicar Entrada</button>
-
-      <p id="status" role="alert" aria-live="polite"></p>
-
+    <div class="form-group">
+      <input type="text" id="tmdbSearch" placeholder="Buscar serie en TMDb..." autocomplete="off" />
+      <ul id="searchResults" class="hidden"></ul>
     </div>
 
+    <div class="form-group">
+      <select id="genreFilter">
+        <option value="">-- Filtrar por género --</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <select id="yearFilter">
+        <option value="">-- Filtrar por año --</option>
+      </select>
+    </div>
+
+    <button id="discoverButton">Descubrir series populares</button>
+    <button id="searchButton">Buscar series filtradas</button>
+
+    <div id="movieGrid"></div>
+
+    <div id="loadingSpinner">Cargando...</div>
+
+    <hr>
+
+    <input type="text" id="postTitle" placeholder="Título de la entrada" />
+    <textarea id="postContent" rows="12" placeholder="Contenido HTML"></textarea>
+    <input type="text" id="postLabels" placeholder="Etiquetas separadas por comas" />
+
+    <button id="publishButton">🚀 Publicar Entrada</button>
+
+    <p id="status"></p>
   </div>
 
   <!-- Diálogo modal para mostrar plantilla copiada o info -->
-  <div id="movieDialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle" aria-describedby="dialogContent">
-    <button id="closeDialog" aria-label="Cerrar diálogo">Cerrar ✖</button>
+  <div id="movieDialog">
+    <button id="closeDialog">Cerrar ✖</button>
     <pre id="dialogContent"></pre>
   </div>
-  <div id="blurOverlay" tabindex="-1"></div>
+  <div id="blurOverlay"></div>
 
 <script>
-  // -- Código JS igual que antes, pero para que lo tengas completo:
-
   const CLIENT_ID = '155693540835-c5528m80r913cahna97nmg7t834pgaub.apps.googleusercontent.com';
-const API_KEY = 'AIzaSyBvtH_J_Xs6TnD4VpQxdlgcOjXrYZtVyLk';
-const BLOG_ID = '3812927193244872888';
-const SCOPES = 'https://www.googleapis.com/auth/blogger';
-const TMDB_API_KEY = "dc340e81a2bdef1a7bcb0b31358487fd";
-const imageBase = "https://image.tmdb.org/t/p/w500";
-const backdropBase = "https://image.tmdb.org/t/p/w1280";
+  const API_KEY = 'AIzaSyBvtH_J_Xs6TnD4VpQxdlgcOjXrYZtVyLk';
+  const BLOG_ID = '3812927193244872888';
+  const SCOPES = 'https://www.googleapis.com/auth/blogger';
 
-let tokenClient;
-let gapiInited = false;
+  const TMDB_API_KEY = 'dc340e81a2bdef1a7bcb0b31358487fd';
+  const imageBase = "https://image.tmdb.org/t/p/w500";
+  const backdropBase = "https://image.tmdb.org/t/p/w1280";
 
-const authBtn = document.getElementById('authBtn');
-const formSection = document.getElementById('formSection');
-const publishButton = document.getElementById('publishButton');
-const status = document.getElementById('status');
-const tmdbSearch = document.getElementById('tmdbSearch');
-const searchResults = document.getElementById('searchResults');
-const genreSelect = document.getElementById('genreFilter');
-const yearSelect = document.getElementById('yearFilter');
-const discoverBtn = document.getElementById('discoverButton');
-const searchBtn = document.getElementById('searchButton');
-const movieGrid = document.getElementById('movieGrid');
-const loadingSpinner = document.getElementById('loadingSpinner');
-const movieDialog = document.getElementById('movieDialog');
-const dialogContent = document.getElementById('dialogContent');
-const closeDialog = document.getElementById('closeDialog');
-const blurOverlay = document.getElementById('blurOverlay');
+  // Google API variables
+  let tokenClient;
+  let gapiInited = false;
 
-let currentPage = 1;
-let totalPages = 1;
-let currentMode = "discover";
-let currentQuery = "";
-let currentGenre = "";
-let currentYear = "";
-let isLoading = false;
+  // UI elements
+  const authBtn = document.getElementById('authBtn');
+  const formSection = document.getElementById('formSection');
+  const tmdbSearch = document.getElementById('tmdbSearch');
+  const searchResults = document.getElementById('searchResults');
+  const genreSelect = document.getElementById('genreFilter');
+  const yearSelect = document.getElementById('yearFilter');
+  const discoverBtn = document.getElementById('discoverButton');
+  const searchBtn = document.getElementById('searchButton');
+  const movieGrid = document.getElementById('movieGrid');
+  const spinner = document.getElementById('loadingSpinner');
+  const postTitle = document.getElementById('postTitle');
+  const postContent = document.getElementById('postContent');
+  const postLabels = document.getElementById('postLabels');
+  const publishButton = document.getElementById('publishButton');
+  const status = document.getElementById('status');
 
-function gapiLoaded() {
-  gapi.load('client', initializeGapiClient);
-}
+  const movieDialog = document.getElementById('movieDialog');
+  const dialogContent = document.getElementById('dialogContent');
+  const closeDialog = document.getElementById('closeDialog');
+  const blurOverlay = document.getElementById('blurOverlay');
 
-async function initializeGapiClient() {
-  await gapi.client.init({ apiKey: API_KEY });
-  gapiInited = true;
-}
+  // Variables para paginación y estado
+  let currentPage = 1;
+  let totalPages = 1;
+  let currentMode = "discover"; // discover o search
+  let currentQuery = "";
+  let currentGenre = "";
+  let currentYear = "";
+  let isLoading = false;
 
-function gisLoaded() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    callback: (tokenResponse) => {
-      if (tokenResponse.error) {
-        status.textContent = 'Error de autenticación: ' + tokenResponse.error;
-        return;
-      }
-      gapi.client.setToken(tokenResponse);
-      authBtn.style.display = 'none';
-      formSection.classList.remove('hidden');
-      status.textContent = '✅ Autenticado, listo para publicar.';
-    },
-  });
-}
-
-function handleAuth() {
-  tokenClient.requestAccessToken();
-}
-
-function showSpinner() {
-  loadingSpinner.style.display = "block";
-}
-
-function hideSpinner() {
-  loadingSpinner.style.display = "none";
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-  const date = new Date(dateStr);
-  const month = months[date.getUTCMonth()];
-  const day = date.getUTCDate();
-  const year = date.getUTCFullYear();
-  return `${day} ${month} ${year}`;
-}
-
-function fetchSeries(url, append = false) {
-  isLoading = true;
-  showSpinner();
-  fetch(url)
-    .then(res => res.json())
-    .then(data => {
-      displaySeries(data.results, append);
-      totalPages = data.total_pages;
-      isLoading = false;
-      hideSpinner();
-    })
-    .catch(() => {
-      isLoading = false;
-      hideSpinner();
-      if (!append) movieGrid.innerHTML = "<p style='color:#ccc'>Error cargando series.</p>";
-    });
-}
-
-function displaySeries(seriesList, append = false) {
-  if (!append) movieGrid.innerHTML = "";
-  if (!seriesList || seriesList.length === 0) {
-    if (!append) movieGrid.innerHTML = "<p style='color:#ccc'>No se encontraron series.</p>";
-    return;
+  // Google API functions
+  function gapiLoaded() {
+    gapi.load('client', initializeGapiClient);
   }
-  seriesList.forEach(serie => {
-    const card = document.createElement("div");
-    card.className = "movie-card";
-    const formattedDate = formatDate(serie.first_air_date);
-    card.innerHTML = `
-      <img src="${serie.poster_path ? imageBase + serie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image'}" alt="${serie.name}" />
-      <div class="title">${serie.name}</div>
-      <div class="release-date">${formattedDate}</div>
-    `;
-    card.addEventListener("click", () => showSeriesDetails(serie.id));
-    movieGrid.appendChild(card);
-  });
-}
 
-function showSeriesDetails(seriesId) {
-  const url = `https://api.themoviedb.org/3/tv/${seriesId}?api_key=${TMDB_API_KEY}&language=es-ES&append_to_response=videos`;
-  fetch(url)
-    .then(res => res.json())
-    .then(series => {
-      const year = series.first_air_date ? series.first_air_date.split("-")[0] : "";
-      const genres = series.genres?.map(g => g.name).join(", ") || "";
-      const trailer = series.videos?.results.find(v => v.site === "YouTube" && v.type === "Trailer");
-      const trailerId = trailer ? trailer.key : "";
-      const duration = series.episode_run_time?.[0] || 'N/A';
+  async function initializeGapiClient() {
+    await gapi.client.init({ apiKey: API_KEY });
+    gapiInited = true;
+  }
 
-      const htmlOutput = `<!-- Configuración lista de episodios -->
-<!-- Nombre: ${series.name} -->
-<!-- Géneros: ${genres},${year},Series,2024 -->
+  function gisLoaded() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: (tokenResponse) => {
+        gapi.client.setToken(tokenResponse);
+        formSection.classList.remove('hidden');
+        authBtn.style.display = 'none';
+      },
+    });
+  }
+
+  function handleAuth() {
+    tokenClient.requestAccessToken();
+  }
+
+  // Publicar post en Blogger
+  async function publishPost() {
+    const title = postTitle.value.trim();
+    const content = postContent.value.trim();
+    const labels = postLabels.value.split(',').map(e => e.trim()).filter(e => e);
+
+    if (!title || !content) {
+      status.innerText = "❌ Título y contenido son obligatorios.";
+      return;
+    }
+
+    const post = {
+      kind: "blogger#post",
+      blog: { id: BLOG_ID },
+      title: title,
+      content: content,
+      labels: labels
+    };
+
+    try {
+      status.innerText = "⏳ Publicando...";
+      const response = await gapi.client.request({
+        path: `https://www.googleapis.com/blogger/v3/blogs/${BLOG_ID}/posts/`,
+        method: 'POST',
+        body: post
+      });
+      status.innerHTML = `✅ Publicado: <a href="${response.result.url}" target="_blank">${response.result.url}</a>`;
+    } catch (err) {
+      status.innerText = `❌ Error: ${err.message}`;
+    }
+  }
+
+  // Mostrar spinner y ocultar
+  function showSpinner() { spinner.style.display = "block"; }
+  function hideSpinner() { spinner.style.display = "none"; }
+
+  // Formatear fecha estilo "Jan 25, 2025"
+  function formatDate(dateStr) {
+    if (!dateStr) return "";
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const date = new Date(dateStr);
+    const month = months[date.getUTCMonth()];
+    const day = date.getUTCDate();
+    const year = date.getUTCFullYear();
+    return `${month} ${day}, ${year}`;
+  }
+
+  // Cargar géneros TMDb en el select
+  function loadGenres() {
+    fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${TMDB_API_KEY}&language=es-ES`)
+      .then(res => res.json())
+      .then(data => {
+        data.genres.forEach(genre => {
+          const option = document.createElement("option");
+          option.value = genre.id;
+          option.textContent = genre.name;
+          genreSelect.appendChild(option);
+        });
+      })
+      .catch(() => {
+        // En caso de error, géneros por defecto
+        const defaultGenres = [
+          {id: 10759, name: "Acción y aventura"},
+          {id: 35, name: "Comedia"},
+          {id: 18, name: "Drama"},
+        ];
+        defaultGenres.forEach(genre => {
+          const option = document.createElement("option");
+          option.value = genre.id;
+          option.textContent = genre.name;
+          genreSelect.appendChild(option);
+        });
+      });
+  }
+
+  // Generar años en select
+  function loadYears() {
+    for (let y = 2025; y >= 1950; y--) {
+      const option = document.createElement("option");
+      option.value = y;
+      option.textContent = y;
+      yearSelect.appendChild(option);
+    }
+  }
+
+  // Buscar series TMDb (discover y búsqueda)
+  function fetchSeries(url, append = false) {
+    isLoading = true;
+    showSpinner();
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        displaySeries(data.results, append);
+        totalPages = data.total_pages;
+        isLoading = false;
+        hideSpinner();
+      })
+      .catch(() => {
+        isLoading = false;
+        hideSpinner();
+        if (!append) movieGrid.innerHTML = "<p style='color:#ccc'>Error cargando series.</p>";
+      });
+  }
+
+  // Mostrar lista de series en grilla
+  function displaySeries(seriesList, append = false) {
+    if (!append) movieGrid.innerHTML = "";
+    if (!seriesList || seriesList.length === 0) {
+      if (!append) movieGrid.innerHTML = "<p style='color:#ccc'>No se encontraron series.</p>";
+      return;
+    }
+    seriesList.forEach(serie => {
+      const card = document.createElement("div");
+      card.className = "movie-card";
+      const formattedDate = formatDate(serie.first_air_date);
+      card.innerHTML = `
+        <img src="${serie.poster_path ? imageBase + serie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image'}" alt="${serie.name}" />
+        <div class="title">${serie.name}</div>
+        <div class="release-date">${formattedDate}</div>
+      `;
+      card.addEventListener("click", () => showSeriesDetails(serie.id));
+      movieGrid.appendChild(card);
+    });
+  }
+
+  // Mostrar detalles con plantilla y rellenar formulario
+  function showSeriesDetails(seriesId) {
+    const url = `https://api.themoviedb.org/3/tv/${seriesId}?api_key=${TMDB_API_KEY}&language=es-ES&append_to_response=videos`;
+    fetch(url)
+      .then(res => res.json())
+      .then(series => {
+        const year = series.first_air_date ? series.first_air_date.split("-")[0] : "";
+        const genres = series.genres?.map(g => g.name) || [];
+        const trailer = series.videos?.results.find(v => v.site === "YouTube" && v.type === "Trailer");
+        const trailerId = trailer ? trailer.key : "";
+        const duration = series.episode_run_time?.[0] || 'N/A';
+
+        const htmlOutput = `
+<!-- Configuration episode list -->
+
+<!-- Name: ${series.name} -->
+
+<!-- Genres: ${genres.join(",")},${year},Series,2024 -->
+
+<!--  -->
 <div data-post-type="serie" hidden>
-  <img src="${imageBase + series.poster_path}"/>
+  <img src="${imageBase + series.poster_path}" alt="${series.name}"/>
   <p id="tmdb-synopsis">${series.overview}</p>
 </div>
 <a name='more'></a>
-<!-- Plantilla generada por Plantillas CJ y Plantillas JMA -->
+<!-- This generator was created by Plantillas CJ y Plantillas JMA -->
 <div
   data-youtube-id="${trailerId}"
   data-backdrop="${backdropBase + series.backdrop_path}"
@@ -461,213 +361,154 @@ function showSeriesDetails(seriesId) {
   data-year="${year}"
   data-duration="${duration} min">
 </div>
+<!--  -->
 <div class="headline is-small mb-4">
-  <h2 class="headline__title">Información</h2>
+  <h2 class="headline__title">Information</h2>
 </div>
 <ul class="post-details mb-4">
-  <li><span>Título</span>${series.name}</li>
-  <li><span>Títulos originales</span>${series.original_name}</li>
-  <li><span>Duración</span>${duration} min</li>
-  <li><span>Año</span>${year}</li>
-  <li><span>Episodios</span>${series.number_of_episodes}</li>
-  <li><span>Temporadas</span>${series.number_of_seasons}</li>
-  <li><span>Fecha de estreno</span>${series.first_air_date}</li>
-  <li><span>Géneros</span>${genres}</li>
-</ul>`;
+  <li><span>Title</span>${series.name}</li>
+  <li><span>Original titles</span>${series.original_name}</li>
+  <li data-duration="${duration} min"><span>Duration</span>${duration} min</li>
+  <li data-year="${year}"><span>Year</span>${year}</li>
+  <li data-episodes-count="${series.number_of_episodes}"><span>Episodes</span>${series.number_of_episodes}</li>
+  <li data-seasons-count="${series.number_of_seasons}"><span>Seasons</span>${series.number_of_seasons}</li>
+  <li><span>Release date</span>${series.first_air_date}</li>
+  <li><span>Genres</span>${genres.join(", ")}</li>
+</ul>
+<!-- This generator was created by Plantillas CJ y Plantillas JMA -->
+`;
 
-      dialogContent.textContent = htmlOutput;
-      movieDialog.style.display = "block";
-      blurOverlay.style.display = "block";
+        // Rellenar formulario
+        postTitle.value = series.name;
+        postContent.value = htmlOutput;
+        postLabels.value = genres.join(", ");
 
-      // Copiar al portapapeles
-      navigator.clipboard.writeText(htmlOutput).then(() => {
-        status.textContent = "Plantilla copiada al portapapeles ✔️";
-      }).catch(() => {
-        status.textContent = "Error al copiar plantilla.";
+        // Mostrar diálogo modal con el contenido para confirmar (opcional)
+        dialogContent.textContent = htmlOutput;
+        movieDialog.style.display = "block";
+        blurOverlay.style.display = "block";
+      })
+      .catch(() => {
+        alert("Error cargando detalles de la serie.");
       });
-    })
-    .catch(() => {
-      alert("Error cargando detalles de la serie.");
-    });
-}
-
-closeDialog.addEventListener("click", () => {
-  movieDialog.style.display = "none";
-  blurOverlay.style.display = "none";
-});
-blurOverlay.addEventListener("click", () => {
-  movieDialog.style.display = "none";
-  blurOverlay.style.display = "none";
-});
-
-discoverBtn.addEventListener("click", () => {
-  currentPage = 1;
-  currentMode = "discover";
-  currentGenre = genreSelect.value;
-  currentYear = yearSelect.value;
-  currentQuery = "";
-
-  let url = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&language=es-ES&sort_by=popularity.desc&page=${currentPage}`;
-  if (currentGenre) url += `&with_genres=${currentGenre}`;
-  if (currentYear) url += `&first_air_date_year=${currentYear}`;
-  fetchSeries(url);
-});
-
-searchBtn.addEventListener("click", () => {
-  currentPage = 1;
-  currentMode = "search";
-  currentQuery = tmdbSearch.value.trim();
-  currentGenre = "";
-  currentYear = "";
-
-  if (!currentQuery) {
-    movieGrid.innerHTML = "<p style='color:#ccc'>Escribe un término para buscar.</p>";
-    return;
   }
 
-  const url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
-  fetchSeries(url);
-});
-
-// Autocompletado búsqueda TMDb
-tmdbSearch.addEventListener("input", () => {
-  const query = tmdbSearch.value.trim();
-  if (query.length < 3) {
-    searchResults.classList.add("hidden");
-    searchResults.innerHTML = "";
-    return;
-  }
-  fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(query)}&page=1`)
-    .then(res => res.json())
-    .then(data => {
-      searchResults.innerHTML = "";
-      if (!data.results || data.results.length === 0) {
-        searchResults.classList.add("hidden");
-        return;
+  // Scroll infinito para cargar más series
+  window.addEventListener("scroll", () => {
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200 && !isLoading && currentPage < totalPages) {
+      currentPage++;
+      let url;
+      if (currentMode === "discover") {
+        url = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&language=es-ES&sort_by=popularity.desc&page=${currentPage}`;
+        if (currentGenre) url += `&with_genres=${currentGenre}`;
+        if (currentYear) url += `&first_air_date_year=${currentYear}`;
+      } else if (currentMode === "search") {
+        url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
       }
-      data.results.slice(0, 7).forEach(serie => {
-        const li = document.createElement("li");
-        li.textContent = serie.name;
-        li.title = serie.name;
-        li.addEventListener("click", () => {
-          searchResults.classList.add("hidden");
-          tmdbSearch.value = serie.name;
-          showSeriesDetails(serie.id);
-        });
-        searchResults.appendChild(li);
-      });
-      searchResults.classList.remove("hidden");
-    })
-    .catch(() => {
+      if (url) fetchSeries(url, true);
+    }
+  });
+
+  // Eventos botones
+  discoverBtn.addEventListener("click", () => {
+    currentPage = 1;
+    currentMode = "discover";
+    currentGenre = genreSelect.value;
+    currentYear = yearSelect.value;
+    currentQuery = "";
+
+    let url = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&language=es-ES&sort_by=popularity.desc&page=${currentPage}`;
+    if (currentGenre) url += `&with_genres=${currentGenre}`;
+    if (currentYear) url += `&first_air_date_year=${currentYear}`;
+
+    fetchSeries(url);
+  });
+
+  searchBtn.addEventListener("click", () => {
+    currentPage = 1;
+    currentMode = "search";
+    currentQuery = tmdbSearch.value.trim();
+    currentGenre = "";
+    currentYear = "";
+
+    if (!currentQuery) {
+      movieGrid.innerHTML = "<p style='color:#ccc'>Escribe un término para buscar.</p>";
+      return;
+    }
+
+    const url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
+    fetchSeries(url);
+  });
+
+  // Buscar autocompletado al escribir en input búsqueda TMDb
+  tmdbSearch.addEventListener("input", () => {
+    const query = tmdbSearch.value.trim();
+    if (query.length < 3) {
       searchResults.classList.add("hidden");
       searchResults.innerHTML = "";
-    });
-});
-
-// Cerrar lista autocompletado si clic fuera
-document.addEventListener("click", (e) => {
-  if (!tmdbSearch.contains(e.target) && !searchResults.contains(e.target)) {
-    searchResults.classList.add("hidden");
-  }
-});
-
-// Scroll infinito
-window.addEventListener("scroll", () => {
-  if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200 && !isLoading && currentPage < totalPages) {
-    currentPage++;
-    let url;
-    if (currentMode === "discover") {
-      url = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&language=es-ES&sort_by=popularity.desc&page=${currentPage}`;
-      if (currentGenre) url += `&with_genres=${currentGenre}`;
-      if (currentYear) url += `&first_air_date_year=${currentYear}`;
-    } else if (currentMode === "search") {
-      url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
+      return;
     }
-    if (url) fetchSeries(url, true);
-  }
-});
-
-// Publicar post en Blogger
-async function publishPost() {
-  const title = document.getElementById('postTitle').value.trim();
-  const content = document.getElementById('postContent').value.trim();
-  const labelsRaw = document.getElementById('postLabels').value.trim();
-  const labels = labelsRaw ? labelsRaw.split(",").map(l => l.trim()) : [];
-
-  if (!title || !content) {
-    status.textContent = "❌ El título y contenido son obligatorios.";
-    return;
-  }
-
-  const post = {
-    kind: "blogger#post",
-    blog: { id: BLOG_ID },
-    title: title,
-    content: content,
-    labels: labels
-  };
-
-  try {
-    const response = await gapi.client.request({
-      path: `https://www.googleapis.com/blogger/v3/blogs/${BLOG_ID}/posts/`,
-      method: 'POST',
-      body: post
-    });
-    status.textContent = `✅ Entrada publicada: ${response.result.url}`;
-  } catch (error) {
-    status.textContent = `❌ Error al publicar: ${error.message}`;
-  }
-}
-
-publishButton.addEventListener("click", publishPost);
-
-// Cargar géneros TMDb
-function loadGenres() {
-  fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${TMDB_API_KEY}&language=es-ES`)
-    .then(res => res.json())
-    .then(data => {
-      if (!data.genres) return;
-      data.genres.forEach(genre => {
-        const option = document.createElement("option");
-        option.value = genre.id;
-        option.textContent = genre.name;
-        genreSelect.appendChild(option);
+    fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(query)}&page=1`)
+      .then(res => res.json())
+      .then(data => {
+        searchResults.innerHTML = "";
+        if (!data.results || data.results.length === 0) {
+          searchResults.classList.add("hidden");
+          return;
+        }
+        data.results.slice(0, 7).forEach(serie => {
+          const li = document.createElement("li");
+          li.textContent = serie.name;
+          li.title = serie.name;
+          li.addEventListener("click", () => {
+            searchResults.classList.add("hidden");
+            tmdbSearch.value = serie.name;
+            showSeriesDetails(serie.id);
+          });
+          searchResults.appendChild(li);
+        });
+        searchResults.classList.remove("hidden");
+      })
+      .catch(() => {
+        searchResults.classList.add("hidden");
+        searchResults.innerHTML = "";
       });
-    })
-    .catch(() => {
-      const defaultGenres = [
-        {id: 10759, name: "Acción y aventura"},
-        {id: 35, name: "Comedia"},
-        {id: 18, name: "Drama"},
-      ];
-      defaultGenres.forEach(genre => {
-        const option = document.createElement("option");
-        option.value = genre.id;
-        option.textContent = genre.name;
-        genreSelect.appendChild(option);
-      });
-    });
-}
+  });
 
-// Cargar años en filtro
-function loadYears() {
-  for (let y = 2025; y >= 1950; y--) {
-    const opt = document.createElement("option");
-    opt.value = y;
-    opt.textContent = y;
-    yearSelect.appendChild(opt);
-  }
-}
+  // Ocultar lista autocompletado si clic fuera
+  document.addEventListener("click", (e) => {
+    if (!tmdbSearch.contains(e.target) && !searchResults.contains(e.target)) {
+      searchResults.classList.add("hidden");
+    }
+  });
 
-// Inicializar
-window.onload = () => {
+  // Botón publicar
+  publishButton.addEventListener("click", publishPost);
+
+  // Cerrar diálogo modal
+  closeDialog.addEventListener("click", () => {
+    movieDialog.style.display = "none";
+    blurOverlay.style.display = "none";
+  });
+  blurOverlay.addEventListener("click", () => {
+    movieDialog.style.display = "none";
+    blurOverlay.style.display = "none";
+  });
+
+  // Iniciar app
+  authBtn.addEventListener("click", handleAuth);
   loadGenres();
   loadYears();
-  if (window.gapi) gapiLoaded();
-  if (window.google) gisLoaded();
-};
 
+  // Carga Google API
+  window.onload = () => {
+    if (window.gapi) gapiLoaded();
+    if (window.google) gisLoaded();
+  };
 </script>
 
 <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
+</body>
+</html>

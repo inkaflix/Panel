@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel Admin Blogger con TMDb - Películas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body { font-family: sans-serif; background: #121212; color: #eee; padding: 20px; max-width: 900px; margin: auto; }
+    h2 { text-align: center; }
+    input, textarea, button, select {
+      width: 100%; margin-top: 10px; padding: 10px; font-size: 1rem; border-radius: 5px; border: none;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #1db954; color: white; font-weight: bold; cursor: pointer; transition: background-color 0.3s ease;
+      border: none;
+    }
+    button:hover { background-color: #14833b; }
+    select { background-color: #222; color: white; }
+    input, textarea { background-color: #222; color: #eee; }
+    #searchResults {
+      border: 1px solid #444; max-height: 200px; overflow-y: auto; margin-top: 0; padding: 0; list-style: none;
+      background: #1e1e1e; border-radius: 5px;
+      position: absolute; width: 100%; z-index: 1000;
+    }
+    #searchResults li {
+      padding: 10px; cursor: pointer; border-bottom: 1px solid #333;
+    }
+    #searchResults li:hover {
+      background-color: #333;
+    }
+    #movieGrid {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
+      gap: 10px;
+    }
+    .movie-card {
+      background: #222; border-radius: 8px; overflow: hidden; cursor: pointer;
+      box-shadow: 0 0 8px rgba(0,0,0,0.7);
+      transition: transform 0.2s ease;
+    }
+    .movie-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #1db954;
+    }
+    .movie-card img {
+      width: 100%; height: auto; display: block;
+    }
+    .title {
+      padding: 5px 8px; font-weight: bold; font-size: 0.9rem; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; color: #1db954;
+    }
+    .release-date {
+      padding: 0 8px 8px 8px; font-size: 0.75rem; color: #aaa;
+    }
+    #loadingSpinner {
+      display: none; text-align: center; margin-top: 20px;
+    }
+    /* Dialogo modal */
+    #movieDialog {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: #222; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.9);
+      padding: 20px; max-width: 600px; max-height: 80vh; overflow-y: auto; z-index: 2000;
+      color: #eee;
+      display: none;
+    }
+    #movieDialog pre {
+      background: #111; padding: 10px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap;
+    }
+    #closeDialog {
+      background: #e74c3c; color: white; padding: 5px 10px; border: none; border-radius: 5px;
+      cursor: pointer; float: right; font-weight: bold; margin-top: -10px; margin-bottom: 10px;
+    }
+    #blurOverlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(3px);
+      z-index: 1500;
+      display: none;
+    }
+    .hidden { display: none !important; }
+    .form-group { position: relative; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h2>📋 Panel Admin Blogger con TMDb - Películas</h2>
+
+  <button id="authBtn">🔐 Iniciar sesión con Google</button>
+
+  <div id="formSection" class="hidden">
+
+    <div class="form-group">
+      <input type="text" id="tmdbSearch" placeholder="Buscar película en TMDb..." autocomplete="off" />
+      <ul id="searchResults" class="hidden"></ul>
+    </div>
+
+    <div class="form-group">
+      <select id="genreFilter">
+        <option value="">-- Filtrar por género --</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <select id="yearFilter">
+        <option value="">-- Filtrar por año --</option>
+      </select>
+    </div>
+
+    <button id="discoverButton">Descubrir películas populares</button>
+    <button id="searchButton">Buscar películas filtradas</button>
+
+    <div id="movieGrid"></div>
+
+    <div id="loadingSpinner">Cargando...</div>
+
+    <hr>
+
+    <input type="text" id="postTitle" placeholder="Título de la entrada" />
+    <textarea id="postContent" rows="12" placeholder="Contenido HTML"></textarea>
+    <input type="text" id="postLabels" placeholder="Etiquetas separadas por comas" />
+
+    <button id="publishButton">🚀 Publicar Entrada</button>
+
+    <p id="status"></p>
+  </div>
+
+  <!-- Diálogo modal para mostrar plantilla copiada o info -->
+  <div id="movieDialog">
+    <button id="closeDialog">Cerrar ✖</button>
+    <pre id="dialogContent"></pre>
+  </div>
+  <div id="blurOverlay"></div>
+
+<script>
+  const CLIENT_ID = '155693540835-c5528m80r913cahna97nmg7t834pgaub.apps.googleusercontent.com';
+  const API_KEY = 'AIzaSyBvtH_J_Xs6TnD4VpQxdlgcOjXrYZtVyLk';
+  const BLOG_ID = '3812927193244872888';
+  const SCOPES = 'https://www.googleapis.com/auth/blogger';
+
+  const TMDB_API_KEY = 'dc340e81a2bdef1a7bcb0b31358487fd';
+  const imageBase = "https://image.tmdb.org/t/p/w500";
+  const backdropBase = "https://image.tmdb.org/t/p/w1280";
+
+  // Google API variables
+  let tokenClient;
+  let gapiInited = false;
+
+  // UI elements
+  const authBtn = document.getElementById('authBtn');
+  const formSection = document.getElementById('formSection');
+  const tmdbSearch = document.getElementById('tmdbSearch');
+  const searchResults = document.getElementById('searchResults');
+  const genreSelect = document.getElementById('genreFilter');
+  const yearSelect = document.getElementById('yearFilter');
+  const discoverBtn = document.getElementById('discoverButton');
+  const searchBtn = document.getElementById('searchButton');
+  const movieGrid = document.getElementById('movieGrid');
+  const spinner = document.getElementById('loadingSpinner');
+  const postTitle = document.getElementById('postTitle');
+  const postContent = document.getElementById('postContent');
+  const postLabels = document.getElementById('postLabels');
+  const publishButton = document.getElementById('publishButton');
+  const status = document.getElementById('status');
+
+  const movieDialog = document.getElementById('movieDialog');
+  const dialogContent = document.getElementById('dialogContent');
+  const closeDialog = document.getElementById('closeDialog');
+  const blurOverlay = document.getElementById('blurOverlay');
+
+  // Variables for pagination and state
+  let currentPage = 1;
+  let totalPages = 1;
+  let currentMode = "discover"; // discover or search
+  let currentQuery = "";
+  let currentGenre = "";
+  let currentYear = "";
+  let isLoading = false;
+
+  // Google API functions
+  function gapiLoaded() {
+    gapi.load('client', initializeGapiClient);
+  }
+
+  async function initializeGapiClient() {
+    await gapi.client.init({ apiKey: API_KEY });
+    gapiInited = true;
+  }
+
+  function gisLoaded() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: (tokenResponse) => {
+        gapi.client.setToken(tokenResponse);
+        formSection.classList.remove('hidden');
+        authBtn.style.display = 'none';
+      },
+    });
+  }
+
+  function handleAuth() {
+    tokenClient.requestAccessToken();
+  }
+
+  // Publish post on Blogger
+  async function publishPost() {
+    const title = postTitle.value.trim();
+    const content = postContent.value.trim();
+    const labels = postLabels.value.split(',').map(e => e.trim()).filter(e => e);
+
+    if (!title || !content) {
+      status.innerText = "❌ Título y contenido son obligatorios.";
+      return;
+    }
+
+    const post = {
+      kind: "blogger#post",
+      blog: { id: BLOG_ID },
+      title: title,
+      content: content,
+      labels: labels
+    };
+
+    try {
+      status.innerText = "⏳ Publicando...";
+      const response = await gapi.client.request({
+        path: `https://www.googleapis.com/blogger/v3/blogs/${BLOG_ID}/posts/`,
+        method: 'POST',
+        body: post
+      });
+      status.innerHTML = `✅ Publicado: <a href="${response.result.url}" target="_blank">${response.result.url}</a>`;
+    } catch (err) {
+      status.innerText = `❌ Error: ${err.message}`;
+    }
+  }
+
+  // Show spinner and hide spinner
+  function showSpinner() { spinner.style.display = "block"; }
+  function hideSpinner() { spinner.style.display = "none"; }
+
+  // Format date like "Jan 25, 2025"
+  function formatDate(dateStr) {
+    if (!dateStr) return "";
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const date = new Date(dateStr);
+    const month = months[date.getUTCMonth()];
+    const day = date.getUTCDate();
+    const year = date.getUTCFullYear();
+    return `${month} ${day}, ${year}`;
+  }
+
+  // Load genres TMDb for movies
+  function loadGenres() {
+    fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${TMDB_API_KEY}&language=es-ES`)
+      .then(res => res.json())
+      .then(data => {
+        data.genres.forEach(genre => {
+          const option = document.createElement("option");
+          option.value = genre.id;
+          option.textContent = genre.name;
+          genreSelect.appendChild(option);
+        });
+      })
+      .catch(() => {
+        // Default genres if error
+        const defaultGenres = [
+          {id: 28, name: "Acción"},
+          {id: 35, name: "Comedia"},
+          {id: 18, name: "Drama"},
+        ];
+        defaultGenres.forEach(genre => {
+          const option = document.createElement("option");
+          option.value = genre.id;
+          option.textContent = genre.name;
+          genreSelect.appendChild(option);
+        });
+      });
+  }
+
+  // Generate years in select
+  function loadYears() {
+    for (let y = 2025; y >= 1950; y--) {
+      const option = document.createElement("option");
+      option.value = y;
+      option.textContent = y;
+      yearSelect.appendChild(option);
+    }
+  }
+
+  // Fetch movies from TMDb API (discover or search)
+  function fetchMovies(url, append = false) {
+    isLoading = true;
+    showSpinner();
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        displayMovies(data.results, append);
+        totalPages = data.total_pages;
+        isLoading = false;
+        hideSpinner();
+      })
+      .catch(() => {
+        isLoading = false;
+        hideSpinner();
+        if (!append) movieGrid.innerHTML = "<p style='color:#ccc'>Error cargando películas.</p>";
+      });
+  }
+
+  // Display movies grid
+  function displayMovies(movies, append = false) {
+    if (!append) movieGrid.innerHTML = "";
+    if (!movies || movies.length === 0) {
+      if (!append) movieGrid.innerHTML = "<p style='color:#ccc'>No se encontraron películas.</p>";
+      return;
+    }
+    movies.forEach(movie => {
+      const card = document.createElement("div");
+      card.className = "movie-card";
+      const formattedDate = formatDate(movie.release_date);
+      card.innerHTML = `
+        <img src="${movie.poster_path ? imageBase + movie.poster_path : 'https://via.placeholder.com/500x750?text=Sin+imagen'}" alt="${movie.title}" />
+        <div class="title">${movie.title}</div>
+        <div class="release-date">${formattedDate}</div>
+      `;
+      card.addEventListener("click", () => showMovieDetails(movie.id));
+      movieGrid.appendChild(card);
+    });
+  }
+
+  // Show movie details with template and fill form
+  function showMovieDetails(movieId) {
+    const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&language=es-ES&append_to_response=videos`;
+    fetch(url)
+      .then(res => res.json())
+      .then(movie => {
+        const year = movie.release_date ? movie.release_date.split("-")[0] : "";
+        const genres = movie.genres?.map(g => g.name) || [];
+        const trailer = movie.videos?.results.find(v => v.site === "YouTube" && v.type === "Trailer");
+        const trailerId = trailer ? trailer.key : "";
+        const runtime = movie.runtime || "N/A";
+
+        const htmlOutput = `
+<!-- Película: ${movie.title} -->
+<!-- Géneros: ${genres.join(", ")} -->
+<!-- Año: ${year} -->
+
+<div data-post-type="movie" hidden>
+  <img src="${imageBase + movie.poster_path}" alt="${movie.title}" />
+  <p id="tmdb-synopsis">${movie.overview}</p>
+</div>
+
+<a name='more'></a>
+<div
+  data-youtube-id="${trailerId}"
+  data-backdrop="${backdropBase + movie.backdrop_path}"
+  data-imdb="${movie.vote_average}"
+  data-year="${year}"
+  data-duration="${runtime} min">
+</div>
+
+<div class="headline is-small mb-4">
+  <h2 class="headline__title">Información</h2>
+</div>
+<ul class="post-details mb-4">
+  <li><span>Título</span> ${movie.title}</li>
+  <li><span>Título original</span> ${movie.original_title}</li>
+  <li><span>Duración</span> ${runtime} min</li>
+  <li><span>Año</span> ${year}</li>
+  <li><span>Fecha de estreno</span> ${movie.release_date}</li>
+  <li><span>Géneros</span> ${genres.join(", ")}</li>
+</ul>
+<!-- Generado por Plantillas CJ y Plantillas JMA -->
+`;
+        // Rellenar formulario
+        postTitle.value = movie.title;
+        postContent.value = htmlOutput;
+        postLabels.value = genres.join(", ");
+
+        // Mostrar diálogo modal con el contenido para confirmar (opcional)
+        dialogContent.textContent = htmlOutput;
+        movieDialog.style.display = "block";
+        blurOverlay.style.display = "block";
+      })
+      .catch(() => {
+        alert("Error cargando detalles de la película.");
+      });
+  }

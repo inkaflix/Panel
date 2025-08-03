@@ -135,9 +135,9 @@
 
 <script>
   // —————— CONFIGURACIÓN ——————
-  const CLIENT_ID = '155693540835-c5528m80r913cahna97nmg7t834pgaub.apps.googleusercontent.com';
-  const API_KEY = 'AIzaSyBvtH_J_Xs6TnD4VpQxdlgcOjXrYZtVyLk';
-  const BLOG_ID = '3812927193244872888';
+  const CLIENT_ID = 'TU_CLIENT_ID_GOOGLE.apps.googleusercontent.com'; // Pon aquí tu Client ID
+  const API_KEY = 'TU_API_KEY_GOOGLE'; // Pon aquí tu API Key
+  const BLOG_ID = 'TU_BLOG_ID'; // Pon aquí tu Blog ID (número)
   const SCOPES = 'https://www.googleapis.com/auth/blogger';
 
   const TMDB_API_KEY = 'dc340e81a2bdef1a7bcb0b31358487fd';
@@ -342,36 +342,31 @@
         const runtime = movie.runtime || 'N/A';
 
         const htmlOutput = `
-<!-- Película: ${movie.title} -->
-<!-- Géneros: ${genres.join(", ")} -->
-<!-- Año: ${year} -->
+<!-- ${movie.title} -->
+<!-- ${genres},Movie,${year} -->
 
+<!-- Post type -->
 <div data-post-type="movie" hidden>
-  <img src="${imageBase + movie.poster_path}" alt="${movie.title}" />
+  <img src="${imageBase + movie.poster_path}" />
   <p id="tmdb-synopsis">${movie.overview}</p>
-</div>
-
-<a name='more'></a>
-<div
-  data-youtube-id="${trailerId}"
-  data-backdrop="${backdropBase + movie.backdrop_path}"
-  data-imdb="${movie.vote_average}"
-  data-year="${year}"
-  data-duration="${runtime} min">
 </div>
 
 <div class="headline is-small mb-4">
   <h2 class="headline__title">Información</h2>
 </div>
-<ul class="post-details mb-4">
+<ul class="post-details mb-4"
+  data-backdrop="${backdropBase + movie.backdrop_path}"
+  data-imdb="${movie.vote_average}">
   <li><span>Título</span> ${movie.title}</li>
   <li><span>Título original</span> ${movie.original_title}</li>
-  <li><span>Duración</span> ${runtime} min</li>
+  <li><span>Duración</span> ${movie.runtime || 0} min</li>
   <li><span>Año</span> ${year}</li>
   <li><span>Fecha de estreno</span> ${movie.release_date}</li>
-  <li><span>Géneros</span> ${genres.join(", ")}</li>
+  <li><span>Géneros</span> ${genres}</li>
+  <li><span>Estado</span> ${movie.status}</li>
+  <li><span>Rating TMDB</span> ${movie.vote_average}</li>
 </ul>
-<!-- Generado por Plantillas CJ y Plantillas JMA -->
+
 <div class="plyer-node" data-selected-lang="lat"></div>
 <script>
   const _SV_LINKS = [

@@ -2,59 +2,276 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <title>Panel Admin Blogger - TMDb</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Panel Admin TMDb</title>
-  <link rel="stylesheet" href="styles.css" />
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      background-color: #121212;
+      color: #eee;
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 15px;
+    }
+    h1 {
+      text-align: center;
+      color: #1db954;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    input, textarea {
+      background-color: #222;
+      color: #eee;
+    }
+    button {
+      background-color: #1db954;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #14833b;
+    }
+    #searchResults {
+      background: #222;
+      max-height: 250px;
+      overflow-y: auto;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-radius: 5px;
+      border: 1px solid #444;
+      position: relative;
+      z-index: 1000;
+    }
+    #searchResults li {
+      padding: 10px;
+      border-bottom: 1px solid #444;
+      cursor: pointer;
+    }
+    #searchResults li:hover {
+      background-color: #333;
+    }
+    #movieGrid {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 15px;
+    }
+    .movie-card {
+      background-color: #222;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(0,0,0,0.7);
+      transition: transform 0.2s ease;
+      text-align: center;
+      padding: 10px;
+    }
+    .movie-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #1db954;
+    }
+    .movie-card img {
+      max-width: 100%;
+      border-radius: 5px;
+      margin-bottom: 8px;
+    }
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Aquí guardamos las URLs que usará el JS -->
-  <input type="hidden" id="urlPeliculas" value="https://api.themoviedb.org/3/discover/movie?api_key=TU_API_KEY" />
-  <input type="hidden" id="urlSeries" value="https://api.themoviedb.org/3/discover/tv?api_key=TU_API_KEY" />
-  <input type="hidden" id="urlEpisodios" value="https://api.themoviedb.org/3/tv/{tv_id}/season/{season_number}/episode/{episode_number}?api_key=TU_API_KEY" />
+  <h1>Panel Admin Blogger - Películas TMDb</h1>
+  <button id="authBtn">🔐 Iniciar sesión con Google</button>
 
-  <header>
-    <h1>Panel Admin TMDb</h1>
-    <nav>
-      <button id="discoverButton" class="active" aria-pressed="true" data-url="">Series</button>
-      <button id="seriesButton" data-url="../filmes/index.html">Filmes</button>
-      <button id="episodiosButton" data-url="../episodios/index.html">Episodios</button>
-    </nav>
-    <div class="filters">
-      <input type="text" id="searchInput" placeholder="Buscar..." aria-label="Buscar" />
-      <button id="searchButton" title="Buscar" aria-label="Buscar">🔍</button>
-      <select id="genreFilter" title="Filtrar por género" aria-label="Filtrar por género">
-        <option value="">Todos los géneros</option>
-      </select>
-      <select id="yearFilter" title="Filtrar por año" aria-label="Filtrar por año">
-        <option value="">Todos los años</option>
-      </select>
-    </div>
-  </header>
+  <div id="panel" style="display:none;">
+    <input type="text" id="searchInput" placeholder="Buscar película..." autocomplete="off" />
+    <ul id="searchResults" style="display:none;"></ul>
 
-  <main>
-    <div id="loadingSpinner" class="spinner hidden" role="status" aria-live="polite">Cargando...</div>
-    <div id="movieGrid" class="grid" aria-live="polite" aria-atomic="true"></div>
-  </main>
+    <div id="movieGrid"></div>
 
-  <div id="blurOverlay" class="hidden overlay" tabindex="-1"></div>
+    <h2>Crear Entrada</h2>
+    <input type="text" id="postTitle" placeholder="Título del post" />
+    <textarea id="postContent" rows="8" placeholder="Contenido HTML"></textarea>
+    <input type="text" id="postLabels" placeholder="Etiquetas separadas por comas" />
 
-  <div id="movieDialog" class="hidden dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle" tabindex="0">
-    <button id="closeDialog" class="close-btn" title="Cerrar" aria-label="Cerrar diálogo">✖</button>
-    <div id="dialogContent"></div>
+    <button id="publishBtn">🚀 Publicar en Blogger</button>
+    <p id="status"></p>
   </div>
 
-  <script>
-    // Redirigir con botones que tienen data-url
-    document.querySelectorAll('nav button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const url = btn.getAttribute('data-url');
-        if (url) {
-          window.location.href = url;
+<script>
+  const CLIENT_ID = '155693540835-c5528m80r913cahna97nmg7t834pgaub.apps.googleusercontent.com';
+  const API_KEY = 'AIzaSyBvtH_J_Xs6TnD4VpQxdlgcOjXrYZtVyLk';
+  const BLOG_ID = '3812927193244872888';
+  const SCOPES = 'https://www.googleapis.com/auth/blogger';
+
+  const TMDB_API_KEY = 'dc340e81a2bdef1a7bcb0b31358487fd';
+  const imageBase = "https://image.tmdb.org/t/p/w300";
+
+  let tokenClient;
+  let gapiInited = false;
+
+  const authBtn = document.getElementById('authBtn');
+  const panel = document.getElementById('panel');
+  const searchInput = document.getElementById('searchInput');
+  const searchResults = document.getElementById('searchResults');
+  const movieGrid = document.getElementById('movieGrid');
+  const postTitle = document.getElementById('postTitle');
+  const postContent = document.getElementById('postContent');
+  const postLabels = document.getElementById('postLabels');
+  const publishBtn = document.getElementById('publishBtn');
+  const status = document.getElementById('status');
+
+  // Cargar cliente Google API
+  function gapiLoaded() {
+    gapi.load('client', initializeGapiClient);
+  }
+
+  async function initializeGapiClient() {
+    await gapi.client.init({ apiKey: API_KEY });
+    gapiInited = true;
+  }
+
+  // Cargar Google Identity Services
+  function gisLoaded() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: (tokenResponse) => {
+        if (tokenResponse.error) {
+          status.textContent = 'Error en autenticación: ' + tokenResponse.error;
+          return;
         }
-      });
+        gapi.client.setToken(tokenResponse);
+        panel.style.display = 'block';
+        authBtn.style.display = 'none';
+      }
     });
-  </script>
-  <script src="script.js"></script>
+  }
+
+  authBtn.addEventListener('click', () => {
+    if (!tokenClient) {
+      alert('Esperando Google API...');
+      return;
+    }
+    tokenClient.requestAccessToken();
+  });
+
+  // Buscar películas TMDb con autocompletado
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.trim();
+    if (query.length < 3) {
+      searchResults.style.display = 'none';
+      searchResults.innerHTML = '';
+      return;
+    }
+
+    fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(query)}&page=1`)
+      .then(res => res.json())
+      .then(data => {
+        searchResults.innerHTML = '';
+        if (!data.results || data.results.length === 0) {
+          searchResults.style.display = 'none';
+          return;
+        }
+
+        data.results.slice(0, 7).forEach(movie => {
+          const li = document.createElement('li');
+          li.textContent = movie.title + (movie.release_date ? ` (${movie.release_date.slice(0,4)})` : '');
+          li.style.cursor = 'pointer';
+          li.addEventListener('click', () => {
+            searchResults.style.display = 'none';
+            searchInput.value = movie.title;
+            fillFormWithMovie(movie.id);
+          });
+          searchResults.appendChild(li);
+        });
+
+        searchResults.style.display = 'block';
+      })
+      .catch(() => {
+        searchResults.style.display = 'none';
+        searchResults.innerHTML = '';
+      });
+  });
+
+  // Ocultar resultados si clic fuera
+  document.addEventListener('click', (e) => {
+    if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+      searchResults.style.display = 'none';
+    }
+  });
+
+  // Traer datos detallados de película y llenar formulario
+  function fillFormWithMovie(movieId) {
+    fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&language=es-ES`)
+      .then(res => res.json())
+      .then(movie => {
+        const genres = movie.genres?.map(g => g.name) || [];
+        postTitle.value = movie.title;
+        postContent.value = `<h2>${movie.title}</h2>\n<p>${movie.overview}</p>\n<img src="${imageBase + movie.poster_path}" alt="${movie.title}" />`;
+        postLabels.value = genres.join(', ');
+        status.textContent = '';
+      })
+      .catch(() => {
+        alert('Error al cargar los detalles de la película.');
+      });
+  }
+
+  // Publicar entrada en Blogger
+  async function publishPost() {
+    const title = postTitle.value.trim();
+    const content = postContent.value.trim();
+    const labels = postLabels.value.split(',').map(l => l.trim()).filter(l => l);
+
+    if (!title || !content) {
+      status.textContent = 'Título y contenido son obligatorios.';
+      return;
+    }
+
+    const post = {
+      kind: "blogger#post",
+      blog: { id: BLOG_ID },
+      title,
+      content,
+      labels
+    };
+
+    try {
+      status.textContent = 'Publicando... ⏳';
+      const response = await gapi.client.request({
+        path: `/blogger/v3/blogs/${BLOG_ID}/posts/`,
+        method: 'POST',
+        body: post
+      });
+      status.innerHTML = `¡Publicado con éxito! <a href="${response.result.url}" target="_blank" style="color:#1db954;">Ver entrada</a>`;
+    } catch (error) {
+      status.textContent = 'Error al publicar: ' + error.message;
+    }
+  }
+
+  publishBtn.addEventListener('click', publishPost);
+
+  // Cargar Google API y Google Identity Services
+  window.onload = () => {
+    gapiLoaded();
+    gisLoaded();
+  };
+</script>
+
 </body>
 </html>

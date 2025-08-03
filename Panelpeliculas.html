@@ -331,19 +331,21 @@
         const duration = movie.runtime || 'N/A';
 
         const htmlOutput = `
+html += `
 <!-- Configuración película -->
 
 <!-- Nombre: ${movie.title} -->
 
 <!-- Géneros: ${genres.join(",")},${year},Movie,2025 -->
 
-<!--  -->
 <div data-post-type="movie" hidden>
   <img src="${imageBase + movie.poster_path}" alt="${movie.title}"/>
   <p id="tmdb-synopsis">${movie.overview}</p>
 </div>
+
 <a name='more'></a>
 <!-- Este generador fue creado por Plantillas CJ y Plantillas JMA -->
+
 <div
   data-youtube-id="${trailerId}"
   data-backdrop="${backdropBase + movie.backdrop_path}"
@@ -351,18 +353,34 @@
   data-year="${year}"
   data-duration="${duration} min">
 </div>
-<!--  -->
+
 <div class="headline is-small mb-4">
   <h2 class="headline__title">Información</h2>
 </div>
+
 <ul class="post-details mb-4">
-  <li><span>Título</span>${movie.title}</li>
-  <li><span>Título original</span>${movie.original_title}</li>
-  <li><span>Duración</span>${duration} min</li>
-  <li><span>Año</span>${year}</li>
-  <li><span>Fecha de estreno</span>${movie.release_date}</li>
-  <li><span>Géneros</span>${genres.join(", ")}</li>
+  <li><span>Título</span> ${movie.title}</li>
+  <li><span>Título original</span> ${movie.original_title}</li>
+  <li><span>Duración</span> ${duration} min</li>
+  <li><span>Año</span> ${year}</li>
+  <li><span>Fecha de estreno</span> ${movie.release_date}</li>
+  <li><span>Géneros</span> ${genres.join(", ")}</li>
 </ul>
+
+<!-- Reproductor automático con TMDB ID -->
+<div class="plyer-node" data-selected-lang="lat"></div>
+<script>
+  const _SV_LINKS = [
+    {
+      lang: "lat",
+      name: "Servers",
+      quality: "HD",
+      url: "https://streaming.cinedom.pro/api/movie/${movieId}",
+      tagVideo: false
+    }
+  ];
+</script>
+
 <!-- Este generador fue creado por Plantillas CJ y Plantillas JMA -->
 `;
 

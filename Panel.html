@@ -4,17 +4,34 @@
   <meta charset="UTF-8">
   <title>Panel Admin Blogger</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Carga la librería Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-    input, textarea, button, select { width: 100%; margin-top: 10px; padding: 10px; font-size: 1rem; }
-    .hidden { display: none; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 1rem;
+    }
+    .hidden {
+      display: none;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <h2>📋 Panel Admin Blogger</h2>
 
-  <button onclick="handleAuth()">🔐 Iniciar sesión con Google</button>
+  <button onclick="handleAuthClick()">🔐 Iniciar sesión con Google</button>
 
   <div id="formSection" class="hidden">
     <input type="text" id="postTitle" placeholder="Título de la entrada">
@@ -26,14 +43,13 @@
   <p id="status"></p>
 
   <script>
-    const CLIENT_ID = '155693540835-c5528m80r913cahna97nmg7t834pgaub.apps.googleusercontent.comm';
-    const API_KEY = 'AIzaSyBvtH_J_Xs6TnD4VpQxdlgcOjXrYZtVyLk';
-    const BLOG_ID = '3812927193244872888';
+    const CLIENT_ID = 'TU_CLIENT_ID_AQUI.apps.googleusercontent.com';
+    const API_KEY = 'TU_API_KEY_AQUI';
+    const BLOG_ID = 'TU_BLOG_ID_AQUI';
     const SCOPES = 'https://www.googleapis.com/auth/blogger';
 
     let tokenClient;
-    let gapiInited = false;
-    let gisInited = false;
+    let accessToken = null;
 
     function gapiLoaded() {
       gapi.load('client', initializeGapiClient);
@@ -41,36 +57,45 @@
 
     async function initializeGapiClient() {
       await gapi.client.init({ apiKey: API_KEY });
-      gapiInited = true;
     }
 
     function gisLoaded() {
       tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: 155693540835,
+        client_id: CLIENT_ID,
         scope: SCOPES,
         callback: (tokenResponse) => {
+          accessToken = tokenResponse.access_token;
           gapi.client.setToken(tokenResponse);
           document.getElementById('formSection').classList.remove('hidden');
+          document.getElementById('status').innerText = '✅ Autenticado correctamente.';
         },
       });
-      gisInited = true;
     }
 
-    function handleAuth() {
+    function handleAuthClick() {
+      if (!tokenClient) {
+        document.getElementById('status').innerText = '❌ Esperando que cargue Google OAuth.';
+        return;
+      }
       tokenClient.requestAccessToken();
     }
 
     async function publishPost() {
-      const title = document.getElementById('postTitle').value;
-      const content = document.getElementById('postContent').value;
-      const labels = document.getElementById('postLabels').value.split(',');
+      const title = document.getElementById('postTitle').value.trim();
+      const content = document.getElementById('postContent').value.trim();
+      const labels = document.getElementById('postLabels').value.split(',').map(l => l.trim()).filter(Boolean);
+
+      if (!title || !content) {
+        document.getElementById('status').innerText = '❌ Título y contenido son obligatorios.';
+        return;
+      }
 
       const post = {
         kind: "blogger#post",
         blog: { id: BLOG_ID },
         title: title,
         content: content,
-        labels: labels.map(e => e.trim())
+        labels: labels
       };
 
       try {
@@ -80,13 +105,14 @@
           body: post
         });
 
-        document.getElementById('status').innerText = `✅ Publicado: ${response.result.url}`;
+        document.getElementById('status').innerHTML = `✅ Publicado correctamente: <a href="${response.result.url}" target="_blank">${response.result.title}</a>`;
       } catch (err) {
-        document.getElementById('status').innerText = `❌ Error: ${err.message}`;
+        document.getElementById('status').innerText = `❌ Error al publicar: ${err.message}`;
       }
     }
   </script>
 
+  <!-- Librerías de Google -->
   <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
   <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 </body>

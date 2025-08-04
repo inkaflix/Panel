@@ -2,28 +2,49 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel Admin - Películas TMDb</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Panel Admin Blogger TMDb - Publicar Películas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <!-- Google API y Sign-In -->
+  <script src="https://apis.google.com/js/api.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>Panel Admin Películas</h1>
-    <input type="text" id="searchInput" placeholder="Buscar película...">
-    <button id="searchButton">Buscar</button>
-    <button id="discoverButton">Populares</button>
-    <select id="genreFilter"><option value="">Género</option></select>
-    <select id="yearFilter"><option value="">Año</option></select>
+    <h1>Panel Admin TMDb - Publicar en Blogger</h1>
+    <div id="googleSignInButton"></div>
+    <p id="loginStatus" style="color:yellow;"></p>
   </header>
 
-  <div id="movieGrid" class="grid"></div>
-  <div id="loadingSpinner" class="spinner" style="display:none;">Cargando...</div>
+  <main>
+    <section id="controls">
+      <input type="text" id="searchInput" placeholder="Buscar película..." />
+      <button id="searchButton">Buscar</button>
 
-  <div id="blurOverlay" class="overlay hidden"></div>
-  <div id="movieDialog" class="dialog hidden">
+      <select id="genreFilter">
+        <option value="">-- Género --</option>
+      </select>
+
+      <select id="yearFilter">
+        <option value="">-- Año --</option>
+      </select>
+
+      <button id="discoverButton">Descubrir populares</button>
+    </section>
+
+    <div id="loadingSpinner" class="hidden">Cargando...</div>
+
+    <div id="movieGrid" class="movie-grid"></div>
+  </main>
+
+  <!-- Diálogo para mostrar HTML generado -->
+  <div id="blurOverlay" class="hidden"></div>
+  <dialog id="movieDialog" class="hidden">
     <button id="closeDialog">Cerrar</button>
-  </div>
+    <div id="dialogContent"></div>
+  </dialog>
 
   <script src="script.js"></script>
 </body>

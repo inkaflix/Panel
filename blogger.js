@@ -1,6 +1,9 @@
-const blogId = document.getElementById("blogId").value.trim() || "3812927193244872888";
+const blogIdInput = document.getElementById("blogId");
 
-document.getElementById("publishPost").addEventListener("click", () => {
+document.getElementById("publishPost").addEventListener("click", (e) => {
+  e.preventDefault(); // Evita recargar o redirigir la página
+
+  const blogId = blogIdInput.value.trim() || "3812927193244872888";
   const title = document.getElementById("postTitle").value.trim();
   const content = document.getElementById("htmlOutput").value.trim();
   const labelsInput = document.getElementById("postLabels").value.trim();
@@ -30,11 +33,7 @@ document.getElementById("publishPost").addEventListener("click", () => {
     .then(res => res.json())
     .then(data => {
       alert("✅ Publicado en Blogger:\n" + data.url);
-      .then(data => {
-  alert("✅ Publicado en Blogger:\n" + data.url);
-  // window.open(data.url, "_blank"); // Comentado para que no abra nueva pestaña
-})
-    
+      // No abre pestaña ni redirige
     })
     .catch(err => {
       console.error(err);

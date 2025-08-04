@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Admin Blogger - Series</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://apis.google.com/js/api.js" async defer onload="gapiLoaded()"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button id="authBtn">🔐 Iniciar sesión con Google</button>
+
+  <div id="formSection" class="hidden">
+    <div class="filters">
+      <select id="genreFilter"><option value=\"\">Género</option></select>
+      <select id="yearFilter"><option value=\"\">Año</option></select>
+      <button id="discoverButton">🎬 Descubrir</button>
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="tmdbSearch" placeholder="Buscar series...">
+      <ul id="searchResults" class="hidden"></ul>
+      <button id="searchButton">🔎 Buscar</button>
+    </div>
+
+    <div id="movieGrid" class="grid"></div>
+
+    <div class="form-post">
+      <input type="text" id="postTitle" placeholder="Título del post">
+      <textarea id="postContent" placeholder="Contenido HTML del post"></textarea>
+      <input type="text" id="postLabels" placeholder="Etiquetas (coma separadas)">
+      <button id="publishButton">🚀 Publicar en Blogger</button>
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <div id="blurOverlay" class="overlay hidden"></div>
+  <div id="movieDialog" class="dialog hidden">
+    <pre id="dialogContent"></pre>
+    <button id="closeDialog">❌ Cerrar</button>
+  </div>
+
+  <div id="loadingSpinner" class="spinner">Cargando...</div>
+
+  <script src="script.js"></script>
+</body>
+</html>

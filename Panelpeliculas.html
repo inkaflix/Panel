@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Panel Admin Blogger con TMDb (Películas)</title>
+  <title>Panel Admin Blogger con TMDb</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
@@ -84,14 +84,14 @@
   </style>
 </head>
 <body>
-  <h2>📋 Panel Admin Blogger con TMDb (Películas)</h2>
+  <h2>📋 Panel Admin Blogger con TMDb</h2>
 
   <button id="authBtn">🔐 Iniciar sesión con Google</button>
 
   <div id="formSection" class="hidden">
 
     <div class="form-group">
-      <input type="text" id="tmdbSearch" placeholder="Buscar película en TMDb..." autocomplete="off" />
+      <input type="text" id="tmdbSearch" placeholder="Buscar serie en TMDb..." autocomplete="off" />
       <ul id="searchResults" class="hidden"></ul>
     </div>
 
@@ -107,8 +107,8 @@
       </select>
     </div>
 
-    <button id="discoverButton">Descubrir películas populares</button>
-    <button id="searchButton">Buscar películas filtradas</button>
+    <button id="discoverButton">Descubrir series populares</button>
+    <button id="searchButton">Buscar series filtradas</button>
 
     <div id="movieGrid"></div>
 
@@ -117,7 +117,9 @@
     <hr>
 
     <input type="text" id="postTitle" placeholder="Título de la entrada" />
-    <textarea id="postContent" rows="12" placeholder="Contenido HTML"></textarea>
+    <textarea id="postContent" rows="12" placeholder="Contenido HTML generado por TMDb"></textarea>
+
+<textarea id="extraContent" rows="6" placeholder="🔗 Contenido adicional (reproductor, enlaces, scripts...) aquí separado"></textarea>
     <input type="text" id="postLabels" placeholder="Etiquetas separadas por comas" />
 
     <button id="publishButton">🚀 Publicar Entrada</button>
@@ -206,7 +208,8 @@
   // Publicar post en Blogger
   async function publishPost() {
     const title = postTitle.value.trim();
-    const content = postContent.value.trim();
+    const extraContent = document.getElementById("extraContent").value.trim();
+const content = postContent.value.trim() + "\n\n" + extraContent;
     const labels = postLabels.value.split(',').map(e => e.trim()).filter(e => e);
 
     if (!title || !content) {
@@ -250,9 +253,9 @@
     return `${month} ${day}, ${year}`;
   }
 
-  // Cargar géneros TMDb de películas en el select
+  // Cargar géneros TMDb en el select
   function loadGenres() {
-    fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${TMDB_API_KEY}&language=es-ES`)
+    fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${TMDB_API_KEY}&language=es-ES`)
       .then(res => res.json())
       .then(data => {
         data.genres.forEach(genre => {
@@ -263,9 +266,9 @@
         });
       })
       .catch(() => {
-        // En caso de error, géneros por defecto de películas
+        // En caso de error, géneros por defecto
         const defaultGenres = [
-          {id: 28, name: "Acción"},
+          {id: 10759, name: "Acción y aventura"},
           {id: 35, name: "Comedia"},
           {id: 18, name: "Drama"},
         ];
@@ -278,14 +281,24 @@
       });
   }
 
-  // Buscar películas TMDb (discover y búsqueda)
-  function fetchMovies(url, append = false) {
+  // Generar años en select
+  function loadYears() {
+    for (let y = 2025; y >= 1950; y--) {
+      const option = document.createElement("option");
+      option.value = y;
+      option.textContent = y;
+      yearSelect.appendChild(option);
+    }
+  }
+
+  // Buscar series TMDb (discover y búsqueda)
+  function fetchSeries(url, append = false) {
     isLoading = true;
     showSpinner();
     fetch(url)
       .then(res => res.json())
       .then(data => {
-        displayMovies(data.results, append);
+        displaySeries(data.results, append);
         totalPages = data.total_pages;
         isLoading = false;
         hideSpinner();
@@ -293,107 +306,111 @@
       .catch(() => {
         isLoading = false;
         hideSpinner();
-        if (!append) movieGrid.innerHTML = "<p style='color:#ccc'>Error cargando películas.</p>";
+        if (!append) movieGrid.innerHTML = "<p style='color:#ccc'>Error cargando series.</p>";
       });
   }
 
-  // Mostrar lista de películas en grilla
-  function displayMovies(movieList, append = false) {
+  // Mostrar lista de series en grilla
+  function displaySeries(seriesList, append = false) {
     if (!append) movieGrid.innerHTML = "";
-    if (!movieList || movieList.length === 0) {
-      if (!append) movieGrid.innerHTML = "<p style='color:#ccc'>No se encontraron películas.</p>";
+    if (!seriesList || seriesList.length === 0) {
+      if (!append) movieGrid.innerHTML = "<p style='color:#ccc'>No se encontraron series.</p>";
       return;
     }
-    movieList.forEach(movie => {
+    seriesList.forEach(serie => {
       const card = document.createElement("div");
       card.className = "movie-card";
-      const formattedDate = formatDate(movie.release_date);
+      const formattedDate = formatDate(serie.first_air_date);
       card.innerHTML = `
-        <img src="${movie.poster_path ? imageBase + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image'}" alt="${movie.title}" />
-        <div class="title">${movie.title}</div>
+        <img src="${serie.poster_path ? imageBase + serie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image'}" alt="${serie.name}" />
+        <div class="title">${serie.name}</div>
         <div class="release-date">${formattedDate}</div>
       `;
-      card.addEventListener("click", () => showMovieDetails(movie.id));
+      card.addEventListener("click", () => showSeriesDetails(serie.id));
       movieGrid.appendChild(card);
     });
   }
 
-  // Mostrar detalles con plantilla y rellenar formulario para película
-  function showMovieDetails(movieId) {
-    const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&language=es-ES&append_to_response=videos`;
+  // Mostrar detalles con plantilla y rellenar formulario
+  function showSeriesDetails(seriesId) {
+    const url = `https://api.themoviedb.org/3/tv/${seriesId}?api_key=${TMDB_API_KEY}&language=es-ES&append_to_response=videos`;
     fetch(url)
       .then(res => res.json())
-      .then(movie => {
-        const year = movie.release_date ? movie.release_date.split("-")[0] : "";
-        const genres = movie.genres?.map(g => g.name) || [];
-        const trailer = movie.videos?.results.find(v => v.site === "YouTube" && v.type === "Trailer");
+      .then(series => {
+        const year = series.first_air_date ? series.first_air_date.split("-")[0] : "";
+        const genres = series.genres?.map(g => g.name) || [];
+        const trailer = series.videos?.results.find(v => v.site === "YouTube" && v.type === "Trailer");
         const trailerId = trailer ? trailer.key : "";
-        const duration = movie.runtime || 'N/A';
+        const duration = series.episode_run_time?.[0] || 'N/A';
 
         const htmlOutput = `
-<!-- Configuración película -->
+<!-- ${movie.title} -->
+<!-- ${genres},Movie,${year} -->
 
-<!-- Nombre: ${movie.title} -->
-
-<!-- Géneros: ${genres.join(",")},${year},Movie,2025 -->
-
-<!--  -->
+<!-- Post type -->
 <div data-post-type="movie" hidden>
-  <img src="${imageBase + movie.poster_path}" alt="${movie.title}"/>
+  <img src="${imageBase + movie.poster_path}" />
   <p id="tmdb-synopsis">${movie.overview}</p>
 </div>
-<a name='more'></a>
-<!-- Este generador fue creado por Plantillas CJ y Plantillas JMA -->
-<div
-  data-youtube-id="${trailerId}"
-  data-backdrop="${backdropBase + movie.backdrop_path}"
-  data-imdb="${movie.vote_average}"
-  data-year="${year}"
-  data-duration="${duration} min">
-</div>
-<!--  -->
+
 <div class="headline is-small mb-4">
   <h2 class="headline__title">Información</h2>
 </div>
-<ul class="post-details mb-4">
-  <li><span>Título</span>${movie.title}</li>
-  <li><span>Título original</span>${movie.original_title}</li>
-  <li><span>Duración</span>${duration} min</li>
-  <li><span>Año</span>${year}</li>
-  <li><span>Fecha de estreno</span>${movie.release_date}</li>
-  <li><span>Géneros</span>${genres.join(", ")}</li>
+<ul class="post-details mb-4"
+  data-backdrop="${backdropBase + movie.backdrop_path}"
+  data-imdb="${movie.vote_average}">
+  <li><span>Título</span> ${movie.title}</li>
+  <li><span>Título original</span> ${movie.original_title}</li>
+  <li><span>Duración</span> ${movie.runtime || 0} min</li>
+  <li><span>Año</span> ${year}</li>
+  <li><span>Fecha de estreno</span> ${movie.release_date}</li>
+  <li><span>Géneros</span> ${genres}</li>
+  <li><span>Estado</span> ${movie.status}</li>
+  <li><span>Rating TMDB</span> ${movie.vote_average}</li>
 </ul>
-<!-- Este generador fue creado por Plantillas CJ y Plantillas JMA -->
+
+const el = document.getElementById("server-data");
+
+const _SV_LINKS = [
+  {
+    lang: el.dataset.lang,
+    name: el.dataset.name,
+    quality: el.dataset.quality,
+    url: el.dataset.url,
+    tagVideo: el.dataset.tagvideo === "true"
+  }
+];
+       
 `;
 
         // Rellenar formulario
-        postTitle.value = movie.title;
+        postTitle.value = series.name;
         postContent.value = htmlOutput;
         postLabels.value = genres.join(", ");
 
-        // Mostrar diálogo modal con el contenido para confirmar
+        // Mostrar diálogo modal con el contenido para confirmar (opcional)
         dialogContent.textContent = htmlOutput;
         movieDialog.style.display = "block";
         blurOverlay.style.display = "block";
       })
       .catch(() => {
-        alert("Error cargando detalles de la película.");
+        alert("Error cargando detalles de la serie.");
       });
   }
 
-  // Scroll infinito para cargar más películas
+  // Scroll infinito para cargar más series
   window.addEventListener("scroll", () => {
     if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200 && !isLoading && currentPage < totalPages) {
       currentPage++;
       let url;
       if (currentMode === "discover") {
-        url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=es-ES&sort_by=popularity.desc&page=${currentPage}`;
+        url = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&language=es-ES&sort_by=popularity.desc&page=${currentPage}`;
         if (currentGenre) url += `&with_genres=${currentGenre}`;
-        if (currentYear) url += `&primary_release_year=${currentYear}`;
+        if (currentYear) url += `&first_air_date_year=${currentYear}`;
       } else if (currentMode === "search") {
-        url = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
+        url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
       }
-      if (url) fetchMovies(url, true);
+      if (url) fetchSeries(url, true);
     }
   });
 
@@ -405,17 +422,18 @@
     currentYear = yearSelect.value;
     currentQuery = "";
 
-    let url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=es-ES&sort_by=popularity.desc&page=${currentPage}`;
+    let url = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&language=es-ES&sort_by=popularity.desc&page=${currentPage}`;
     if (currentGenre) url += `&with_genres=${currentGenre}`;
-    if (currentYear) url += `&primary_release_year=${currentYear}`;
+    if (currentYear) url += `&first_air_date_year=${currentYear}`;
 
-    fetchMovies(url);
+    fetchSeries(url);
   });
 
   searchBtn.addEventListener("click", () => {
     currentPage = 1;
     currentMode = "search";
     currentQuery = tmdbSearch.value.trim();
+    currentGenre = "";
     currentYear = "";
 
     if (!currentQuery) {
@@ -423,8 +441,8 @@
       return;
     }
 
-    const url = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
-    fetchMovies(url);
+    const url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
+    fetchSeries(url);
   });
 
   // Buscar autocompletado al escribir en input búsqueda TMDb
@@ -435,7 +453,7 @@
       searchResults.innerHTML = "";
       return;
     }
-    fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(query)}&page=1`)
+    fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&language=es-ES&query=${encodeURIComponent(query)}&page=1`)
       .then(res => res.json())
       .then(data => {
         searchResults.innerHTML = "";
@@ -443,14 +461,14 @@
           searchResults.classList.add("hidden");
           return;
         }
-        data.results.slice(0, 7).forEach(movie => {
+        data.results.slice(0, 7).forEach(serie => {
           const li = document.createElement("li");
-          li.textContent = movie.title;
-          li.title = movie.title;
+          li.textContent = serie.name;
+          li.title = serie.name;
           li.addEventListener("click", () => {
             searchResults.classList.add("hidden");
-            tmdbSearch.value = movie.title;
-            showMovieDetails(movie.id);
+            tmdbSearch.value = serie.name;
+            showSeriesDetails(serie.id);
           });
           searchResults.appendChild(li);
         });
@@ -493,5 +511,9 @@
     if (window.google) gisLoaded();
   };
 </script>
+
 <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
+</body>
+</html>

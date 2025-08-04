@@ -344,43 +344,56 @@ const content = postContent.value.trim() + "\n\n" + extraContent;
         const duration = series.episode_run_time?.[0] || 'N/A';
 
         const htmlOutput = `
-<!-- ${movie.title} -->
-<!-- ${genres},Movie,${year} -->
+<!-- Configuration episode list -->
 
-<!-- Post type -->
-<div data-post-type="movie" hidden>
-  <img src="${imageBase + movie.poster_path}" />
-  <p id="tmdb-synopsis">${movie.overview}</p>
+<!-- Name: ${series.name} -->
+
+<!-- Genres: ${genres.join(",")},${year},Series,2024 -->
+
+<!--  -->
+<div data-post-type="serie" hidden>
+  <img src="${imageBase + series.poster_path}" alt="${series.name}"/>
+  <p id="tmdb-synopsis">${series.overview}</p>
 </div>
-
+<a name='more'></a>
+<!-- This generator was created by Plantillas CJ y Plantillas JMA -->
+<div
+  data-youtube-id="${trailerId}"
+  data-backdrop="${backdropBase + series.backdrop_path}"
+  data-imdb="${series.vote_average}"
+  data-year="${year}"
+  data-duration="${duration} min">
+</div>
+<!--  -->
 <div class="headline is-small mb-4">
-  <h2 class="headline__title">Información</h2>
+  <h2 class="headline__title">Information</h2>
 </div>
-<ul class="post-details mb-4"
-  data-backdrop="${backdropBase + movie.backdrop_path}"
-  data-imdb="${movie.vote_average}">
-  <li><span>Título</span> ${movie.title}</li>
-  <li><span>Título original</span> ${movie.original_title}</li>
-  <li><span>Duración</span> ${movie.runtime || 0} min</li>
-  <li><span>Año</span> ${year}</li>
-  <li><span>Fecha de estreno</span> ${movie.release_date}</li>
-  <li><span>Géneros</span> ${genres}</li>
-  <li><span>Estado</span> ${movie.status}</li>
-  <li><span>Rating TMDB</span> ${movie.vote_average}</li>
+<ul class="post-details mb-4">
+  <li><span>Title</span>${series.name}</li>
+  <li><span>Original titles</span>${series.original_name}</li>
+  <li data-duration="${duration} min"><span>Duration</span>${duration} min</li>
+  <li data-year="${year}"><span>Year</span>${year}</li>
+  <li data-episodes-count="${series.number_of_episodes}"><span>Episodes</span>${series.number_of_episodes}</li>
+  <li data-seasons-count="${series.number_of_seasons}"><span>Seasons</span>${series.number_of_seasons}</li>
+  <li><span>Release date</span>${series.first_air_date}</li>
+  <li><span>Genres</span>${genres.join(", ")}</li>
 </ul>
-
-const el = document.getElementById("server-data");
-
-const _SV_LINKS = [
-  {
-    lang: el.dataset.lang,
-    name: el.dataset.name,
-    quality: el.dataset.quality,
-    url: el.dataset.url,
-    tagVideo: el.dataset.tagvideo === "true"
-  }
-];
-       
+        
+        <!--
+        <div class="plyer-node" data-selected-lang="lat"></div>
+<script>
+  const _SV_LINKS = [
+    {
+      lang: "lat",
+      name: "Servers",
+      quality: "HD",
+      url: "https://streaming.cinedom.pro/api/movie/${customId}",
+      tagVideo: false
+    }
+  ]
+</script>
+        -->
+<!-- This generator was created by Plantillas CJ y Plantillas JMA -->
 `;
 
         // Rellenar formulario

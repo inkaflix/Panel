@@ -30,7 +30,11 @@ document.getElementById("publishPost").addEventListener("click", () => {
     .then(res => res.json())
     .then(data => {
       alert("✅ Publicado en Blogger:\n" + data.url);
-      window.open(data.url, "_blank");
+      .then(data => {
+  alert("✅ Publicado en Blogger:\n" + data.url);
+  // window.open(data.url, "_blank"); // Comentado para que no abra nueva pestaña
+})
+    
     })
     .catch(err => {
       console.error(err);

@@ -13,6 +13,23 @@ const dialog = document.getElementById("movieDialog");
 const closeDialog = document.getElementById("closeDialog");
 const blurOverlay = document.getElementById("blurOverlay");
 
+const d = id => document.getElementById(id);
+const dialogInputs = {
+  title: d("dialogTitle"),
+  original_title: d("dialogOriginalTitle"),
+  synopsis: d("dialogSynopsis"),
+  runtime: d("dialogRuntime"),
+  year: d("dialogYear"),
+  release_date: d("dialogReleaseDate"),
+  rating: d("dialogRating"),
+  status: d("dialogStatus"),
+  tmdb_rate: d("dialogTmdbRate"),
+  genres: d("dialogGenres"),
+  trailer_id: d("dialogTrailerId"),
+  poster_image: d("dialogPosterImage"),
+  backdrop_image: d("dialogBackdropImage")
+};
+
 let currentPage = 1;
 let totalPages = 1;
 let currentMode = "discover";
@@ -21,7 +38,6 @@ let currentGenre = "";
 let currentYear = "";
 let isLoading = false;
 
-// Llena los años para el filtro de año
 for (let y = 2025; y >= 1950; y--) {
   const opt = document.createElement("option");
   opt.value = y;
@@ -66,7 +82,7 @@ function fetchMovies(url, append = false) {
 function displayMovies(movies, append = false) {
   if (!append) movieGrid.innerHTML = "";
   if (!movies || movies.length === 0) {
-    if (!append) movieGrid.innerHTML = "<p style='color:white'>No se encontraron películas.</p>";
+    if (!append) movieGrid.innerHTML = "<p style='color:white'>No movies found.</p>";
     return;
   }
   movies.forEach(movie => {
@@ -74,7 +90,7 @@ function displayMovies(movies, append = false) {
     card.className = "movie-card";
     const formattedDate = formatDate(movie.release_date);
     card.innerHTML = `
-      <img src="${movie.poster_path ? imageBase + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image'}" alt="${movie.title}" />
+      <img src="${imageBase + movie.poster_path}" alt="${movie.title}" />
       <div class="title">${movie.title}</div>
       <div class="release-date">${formattedDate}</div>
     `;
@@ -83,11 +99,13 @@ function displayMovies(movies, append = false) {
   });
 }
 
+//inicio
 function showMovieDetails(movieId) {
   const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}&language=es-ES&append_to_response=videos`;
   fetch(url)
     .then(res => res.json())
     .then(movie => {
+      const customId = movie.id; 
       const year = movie.release_date ? movie.release_date.split("-")[0] : "";
       const genres = movie.genres?.map(g => g.name).join(", ") || "";
 
@@ -117,26 +135,26 @@ function showMovieDetails(movieId) {
   <li><span>Rating TMDB</span> ${movie.vote_average}</li>
 </ul>
 
-<div class=\"plyer-node\" data-selected-lang=\"lat\"></div>
+<div class="plyer-node" data-selected-lang="lat"></div>
 <script>
   const _SV_LINKS = [
     {
-      lang: \"lat\",
-      name: \"Servers\",
-      quality: \"HD\",
-      url: \"https://streaming.cinedom.pro/api/movie/${movie.id}\",
+      lang: "lat",
+      name: "Servers",
+      quality: "HD",
+      url: "https://streaming.cinedom.pro/api/movie/${customId}",
       tagVideo: false
     }
   ]
 </script>
 `;
 
-      // Copiar al portapapeles el bloque HTML completo
+      // Copiar al portapapeles el bloque HTML
       navigator.clipboard.writeText(htmlOutput).then(() => {
-        console.log("Bloque HTML copiado al portapapeles");
+        console.log("Bloque HTML copiado con toda la información");
       });
 
-      // Mostrar diálogo con el contenido
+      // Mostrar diálogo y overlay
       dialog.querySelector("#dialogContent")?.remove();
       const contentDiv = document.createElement("div");
       contentDiv.id = "dialogContent";
@@ -148,20 +166,22 @@ function showMovieDetails(movieId) {
       blurOverlay.classList.add("show");
     });
 }
+//fin
 
-// Eventos para cerrar diálogo
+// Eventos para cerrar el diálogo
 closeDialog.addEventListener("click", () => {
   dialog.classList.add("hidden");
   blurOverlay.classList.remove("show");
   blurOverlay.classList.add("hidden");
 });
+
 blurOverlay.addEventListener("click", () => {
   dialog.classList.add("hidden");
   blurOverlay.classList.remove("show");
   blurOverlay.classList.add("hidden");
 });
 
-// Evento descubrir películas con filtros
+// Evento para descubrir películas con filtros
 discoverBtn.addEventListener("click", () => {
   currentPage = 1;
   currentMode = "discover";
@@ -174,7 +194,7 @@ discoverBtn.addEventListener("click", () => {
   fetchMovies(url);
 });
 
-// Evento buscar películas por texto
+// Evento para buscar películas por texto
 searchBtn.addEventListener("click", () => {
   currentPage = 1;
   currentMode = "search";
@@ -201,9 +221,10 @@ window.addEventListener("scroll", () => {
   }
 });
 
-// Cargar géneros para filtro
+// Cargar géneros para el filtro al iniciar
 function fetchGenres() {
-  fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}&language=es-ES`)
+  const url = `https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}&language=es-ES`;
+  fetch(url)
     .then(res => res.json())
     .then(data => {
       if (data.genres && Array.isArray(data.genres)) {
@@ -215,9 +236,11 @@ function fetchGenres() {
         });
       }
     })
-    .catch(err => console.error("Error cargando géneros:", err));
+    .catch(err => {
+      console.error("Error cargando géneros:", err);
+    });
 }
 
 // Inicialización
 fetchGenres();
-discoverBtn.click();
+discoverBtn.click();  // Cargar películas populares al inicio

@@ -1,8 +1,13 @@
-const blogId = "3812927193244872888"; // ← Pega tu Blog ID aquí
+const blogId = document.getElementById("blogId").value.trim() || "3812927193244872888";
 
 document.getElementById("publishPost").addEventListener("click", () => {
   const title = document.getElementById("postTitle").value.trim();
   const content = document.getElementById("htmlOutput").value.trim();
+  const labelsInput = document.getElementById("postLabels").value.trim();
+
+  const labels = labelsInput
+    ? labelsInput.split(",").map(label => label.trim()).filter(label => label.length > 0)
+    : [];
 
   if (!accessToken || !title || !content) {
     alert("⚠️ Faltan datos obligatorios o no has iniciado sesión.");
@@ -18,7 +23,8 @@ document.getElementById("publishPost").addEventListener("click", () => {
     body: JSON.stringify({
       kind: "blogger#post",
       title,
-      content
+      content,
+      labels
     })
   })
     .then(res => res.json())

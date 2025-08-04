@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel Admin TMDb + Blogger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      background: #121212;
+      color: #eee;
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      border-radius: 5px;
+      border: none;
+      font-size: 1rem;
+    }
+    textarea {
+      height: 200px;
+      font-family: monospace;
+      background: #222;
+      color: #ddd;
+      resize: vertical;
+    }
+    button {
+      background-color: #2196f3;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1976d2;
+    }
+    .hidden {
+      display: none;
+    }
+    label {
+      margin-top: 1rem;
+      display: block;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Panel Admin TMDb + Blogger</h1>
+
+  <!-- Login/Logout -->
+  <div id="login" style="margin-bottom: 1rem;">
+    <button id="loginButton">Iniciar sesión con Google</button>
+  </div>
+  <button id="logout" class="hidden">Cerrar sesión</button>
+
+  <!-- Inputs para buscar película y Custom ID -->
+  <label for="searchInput">Buscar película por título o ID TMDb:</label>
+  <input type="text" id="searchInput" placeholder="Ejemplo: 550 o Fight Club" />
+  <button id="searchButton">Buscar película</button>
+
+  <label for="customIdInput">Custom ID para URL streaming (ejemplo: 6395779005522593699):</label>
+  <input type="text" id="customIdInput" placeholder="ID para URL de streaming" />
+
+  <label for="postTitle">Título del post:</label>
+  <input type="text" id="postTitle" placeholder="Título para Blogger" />
+
+  <label for="postLabels">Etiquetas (separadas por coma):</label>
+  <input type="text" id="postLabels" placeholder="Ej: Acción, Drama, Thriller" />
+
+  <label for="htmlOutput">HTML generado para publicar:</label>
+  <textarea id="htmlOutput" placeholder="Aquí aparecerá el código generado..." readonly></textarea>
+
+  <label for="blogId">Blog ID de Blogger:</label>
+  <input type="text" id="blogId" placeholder="Tu Blog ID" value="3812927193244872888" />
+
+  <button id="publishPost">Publicar en Blogger</button>
+
+  <!-- Scripts -->
+  <script src="p-auth.js"></script>
+  <script src="p-blogger.js"></script>
+  <script src="p-main.js"></script>
+</body>
+</html>

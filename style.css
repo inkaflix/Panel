@@ -1,76 +1,86 @@
-
-
 body {
-  font-family: sans-serif;
-  background: #1c1c1c;
+  background-color: #121212;
   color: #fff;
+  font-family: sans-serif;
   margin: 0;
   padding: 1rem;
 }
 
-.hidden { display: none; }
-
-button {
-  padding: 0.6rem 1.2rem;
-  background: #2196f3;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  margin: 0.5rem 0;
-  cursor: pointer;
+header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
-.filters, .search-box, .form-post {
-  margin: 1rem 0;
+input, select, button {
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+}
+
+button {
+  background: #03a9f4;
+  color: white;
+  cursor: pointer;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
 }
 
 .movie-card {
-  background: #2a2a2a;
-  padding: 0.5rem;
+  background-color: #1e1e1e;
   border-radius: 8px;
-  text-align: center;
+  overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s;
 }
-.movie-card:hover { transform: scale(1.05); }
+
+.movie-card:hover {
+  transform: scale(1.05);
+}
 
 .movie-card img {
   width: 100%;
-  height: auto;
-  border-radius: 4px;
+  display: block;
 }
 
-.overlay {
+.movie-card .title {
+  padding: 8px;
+  font-weight: bold;
+}
+
+.dialog, .overlay {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  z-index: 999;
 }
 
 .dialog {
-  position: fixed;
-  top: 10%; left: 50%;
-  transform: translateX(-50%);
-  background: #333;
+  background: #222;
   color: #fff;
-  padding: 1rem;
-  z-index: 1000;
-  width: 80%;
-  max-height: 70vh;
+  padding: 20px;
+  max-width: 600px;
+  margin: auto;
+  z-index: 9999;
   overflow-y: auto;
-  border-radius: 10px;
-  box-shadow: 0 0 20px #000;
+  top: 10%;
+  border-radius: 8px;
 }
+
+.overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 9998;
+}
+
+.hidden { display: none; }
+
+.show { display: block; }
 
 .spinner {
   text-align: center;
   margin-top: 20px;
-  display: none;
 }

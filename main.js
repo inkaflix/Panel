@@ -1,5 +1,3 @@
-
-
 const apiKey = "867b27ebb5a72c3f64ee67bc9dd7a794";
 const imageBase = "https://image.tmdb.org/t/p/w500";
 const backdropBase = "https://image.tmdb.org/t/p/w1280";
@@ -105,6 +103,7 @@ function generateEpisodeCode(tvId, seasonNumber, episodeNumber, serieName, episo
     return;
   }
 
+  const selectedLang = document.getElementById("selectLang")?.value || "lat";
   const still = episode.still_path ? imageBase + episode.still_path : "https://via.placeholder.com/1280x720?text=Sin+Imagen";
 
   const htmlOutput = `
@@ -133,11 +132,11 @@ function generateEpisodeCode(tvId, seasonNumber, episodeNumber, serieName, episo
     </div>
   </header>
 
-  <div class="plyer-node" data-selected-lang="lat"></div>
+  <div class="plyer-node" data-selected-lang="${selectedLang}"></div>
   <script>
     const _SV_LINKS = [
       {
-        lang: "lat",
+        lang: "${selectedLang}",
         name: "Vip🟢",
         quality: "HD",
         url: "https://streaming.cinedom.pro/api/tv/${tvId}/${seasonNumber}/${episodeNumber}",

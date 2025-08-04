@@ -40,3 +40,4 @@ document.getElementById("publishPost").addEventListener("click", (e) => {
       alert("❌ Error al publicar. Revisa si el token expiró o si el Blog ID es correcto.");
     });
 });
+// fin 

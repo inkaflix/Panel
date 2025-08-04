@@ -27,3 +27,4 @@ window.onload = function () {
     location.reload();
   };
 };
+// final del código 

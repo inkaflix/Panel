@@ -2,6 +2,14 @@ const apiKey = "dc340e81a2bdef1a7bcb0b31358487fd";
 const imageBase = "https://image.tmdb.org/t/p/w500";
 const backdropBase = "https://image.tmdb.org/t/p/w1280";
 
+// Configura aquí tu Client ID y Blog ID:
+const CLIENT_ID = '155693540835-c5528m80r913cahna97nmg7t834pgaub.apps.googleusercontent.com';
+  // Ej: 1234567890-abcdefg.apps.googleusercontent.com
+const blogId = "3812927193244872888";      // Ej: 1234567890123456789
+
+// Variables globales para autenticación
+let accessToken = null;
+
 const movieGrid = document.getElementById("movieGrid");
 const discoverBtn = document.getElementById("discoverButton");
 const searchBtn = document.getElementById("searchButton");
@@ -14,21 +22,6 @@ const closeDialog = document.getElementById("closeDialog");
 const blurOverlay = document.getElementById("blurOverlay");
 
 const d = id => document.getElementById(id);
-const dialogInputs = {
-  title: d("dialogTitle"),
-  original_title: d("dialogOriginalTitle"),
-  synopsis: d("dialogSynopsis"),
-  runtime: d("dialogRuntime"),
-  year: d("dialogYear"),
-  release_date: d("dialogReleaseDate"),
-  rating: d("dialogRating"),
-  status: d("dialogStatus"),
-  tmdb_rate: d("dialogTmdbRate"),
-  genres: d("dialogGenres"),
-  trailer_id: d("dialogTrailerId"),
-  poster_image: d("dialogPosterImage"),
-  backdrop_image: d("dialogBackdropImage")
-};
 
 let currentPage = 1;
 let totalPages = 1;
@@ -38,30 +31,53 @@ let currentGenre = "";
 let currentYear = "";
 let isLoading = false;
 
-for (let y = 2025; y >= 1950; y--) {
-  const opt = document.createElement("option");
-  opt.value = y;
-  opt.textContent = y;
-  yearSelect.appendChild(opt);
+// ---- Google Sign-In Setup ----
+function initializeGoogleSignIn() {
+  google.accounts.id.initialize({
+    client_id: clientId,
+    callback: handleCredentialResponse
+  });
+
+  google.accounts.id.renderButton(
+    document.getElementById("googleSignInButton"),
+    { theme: "outline", size: "large" }
+  );
+
+  // Opcional: prompt automático
+  // google.accounts.id.prompt();
 }
 
-function showSpinner() {
-  spinner.style.display = "block";
-}
-function hideSpinner() {
-  spinner.style.display = "none";
+// Esta función recibe el token JWT de Google y lo intercambia para obtener un token de acceso OAuth2
+async function handleCredentialResponse(response) {
+  // response.credential contiene un JWT de Google ID Token
+  // Para obtener access token, deberías implementar flujo OAuth2 completo con popup, o usar Google API Client Library.
+  // Aquí usaremos la librería Google API para simplificar (asegúrate de incluir <script src="https://apis.google.com/js/api.js"></script> en tu HTML)
+
+  await gapi.load('client:auth2', async () => {
+    await gapi.client.init({
+      clientId: clientId,
+      scope: 'https://www.googleapis.com/auth/blogger'
+    });
+    const authInstance = gapi.auth2.getAuthInstance();
+    await authInstance.signIn();
+    accessToken = authInstance.currentUser.get().getAuthResponse().access_token;
+    console.log("Access token obtenido:", accessToken);
+  });
 }
 
+// ---- Spinner helpers ----
+function showSpinner() { spinner.style.display = "block"; }
+function hideSpinner() { spinner.style.display = "none"; }
+
+// ---- Fecha formateada ----
 function formatDate(dateStr) {
   if (!dateStr) return "";
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const date = new Date(dateStr);
-  const month = months[date.getUTCMonth()];
-  const day = date.getUTCDate();
-  const year = date.getUTCFullYear();
-  return `${month} ${day}, ${year}`;
+  return `${months[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
 }
 
+// ---- Fetch y mostrar películas ----
 function fetchMovies(url, append = false) {
   isLoading = true;
   showSpinner();
@@ -99,8 +115,12 @@ function displayMovies(movies, append = false) {
   });
 }
 
-//inicio
+// ---- Mostrar detalles y publicar automáticamente ----
 function showMovieDetails(movieId) {
+  if (!accessToken) {
+    alert("Por favor, inicia sesión con Google para publicar.");
+    return;
+  }
   const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}&language=es-ES&append_to_response=videos`;
   fetch(url)
     .then(res => res.json())
@@ -149,12 +169,13 @@ function showMovieDetails(movieId) {
 </script>
 `;
 
-      // Copiar al portapapeles el bloque HTML
-      navigator.clipboard.writeText(htmlOutput).then(() => {
-        console.log("Bloque HTML copiado con toda la información");
-      });
+      // Copiar al portapapeles (opcional)
+      navigator.clipboard.writeText(htmlOutput);
 
-      // Mostrar diálogo y overlay
+      // Publicar automáticamente en Blogger
+      publicarEnBlogger(movie.title, htmlOutput, genres.split(","));
+
+      // Mostrar diálogo con el HTML
       dialog.querySelector("#dialogContent")?.remove();
       const contentDiv = document.createElement("div");
       contentDiv.id = "dialogContent";
@@ -166,22 +187,48 @@ function showMovieDetails(movieId) {
       blurOverlay.classList.add("show");
     });
 }
-//fin
 
-// Eventos para cerrar el diálogo
+function publicarEnBlogger(titulo, contenidoHTML, etiquetas) {
+  if (!accessToken) {
+    alert("Debes iniciar sesión para publicar.");
+    return;
+  }
+  fetch(`https://www.googleapis.com/blogger/v3/blogs/${blogId}/posts/`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      kind: "blogger#post",
+      title: titulo,
+      content: contenidoHTML,
+      labels: etiquetas
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert(`Publicado con éxito: "${titulo}"`);
+  })
+  .catch(error => {
+    console.error("Error al publicar:", error);
+    alert("Error al publicar en Blogger.");
+  });
+}
+
+// Eventos cerrar diálogo
 closeDialog.addEventListener("click", () => {
   dialog.classList.add("hidden");
   blurOverlay.classList.remove("show");
   blurOverlay.classList.add("hidden");
 });
-
 blurOverlay.addEventListener("click", () => {
   dialog.classList.add("hidden");
   blurOverlay.classList.remove("show");
   blurOverlay.classList.add("hidden");
 });
 
-// Evento para descubrir películas con filtros
+// Eventos botones y scroll (igual que antes)
 discoverBtn.addEventListener("click", () => {
   currentPage = 1;
   currentMode = "discover";
@@ -193,8 +240,6 @@ discoverBtn.addEventListener("click", () => {
   if (currentYear) url += `&primary_release_year=${currentYear}`;
   fetchMovies(url);
 });
-
-// Evento para buscar películas por texto
 searchBtn.addEventListener("click", () => {
   currentPage = 1;
   currentMode = "search";
@@ -204,8 +249,6 @@ searchBtn.addEventListener("click", () => {
   const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&language=es-ES&query=${encodeURIComponent(currentQuery)}&page=${currentPage}&include_adult=false`;
   fetchMovies(url);
 });
-
-// Scroll infinito para cargar más resultados
 window.addEventListener("scroll", () => {
   if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200 && !isLoading && currentPage < totalPages) {
     currentPage++;
@@ -221,7 +264,7 @@ window.addEventListener("scroll", () => {
   }
 });
 
-// Cargar géneros para el filtro al iniciar
+// Carga géneros al inicio
 function fetchGenres() {
   const url = `https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}&language=es-ES`;
   fetch(url)
@@ -241,6 +284,10 @@ function fetchGenres() {
     });
 }
 
-// Inicialización
 fetchGenres();
-discoverBtn.click();  // Cargar películas populares al inicio
+discoverBtn.click();
+
+// Inicializar Google Sign-In (debes agregar el botón en HTML)
+window.onload = () => {
+  initializeGoogleSignIn();
+};
